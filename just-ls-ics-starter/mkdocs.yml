@@ -1,0 +1,13 @@
+site_name: JUST Long-Slit ICS
+theme:
+  name: material
+nav:
+  - 首页: index.md
+  - ADR: 
+    - 0001 Monorepo: adr/0001-monorepo-python.md
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - tables
+  - footnotes
