@@ -2,12 +2,13 @@
 name = "just-longslit-ics"
 version = "0.1.0"
 description = "JUST 长缝光谱仪控制系统（最小可运行骨架）"
-authors = [{name = "JUST Project", email = "dev@just.local"}]
+authors = [{ name = "JUST Project", email = "dev@just.local" }]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111",
-    "uvicorn[standard]>=0.30",
+    # 用基础版 uvicorn，避免 Windows + Python 3.13 在可选依赖上编译失败
+    "uvicorn>=0.30,<0.32",
     "pydantic>=2.7",
     "pydantic-settings>=2.2",
     "influxdb-client>=1.43",
@@ -21,19 +22,31 @@ dev = [
     "mypy>=1.10",
     "types-requests",
     "mkdocs-material>=9.5",
+    # 需要热重载时再装 watchfiles（可选）：
+    # "watchfiles>=0.21",
 ]
+
+[tool.setuptools]
+# 关键：声明源码在 src/ 下
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-lint.select = ["E","F","I","UP","B","SIM","PL","RUF"]
-lint.ignore = ["E501"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "PL", "RUF"]
+ignore = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
+# 代码目标保持 3.11 兼容（你本机 3.13 也能跑）
 python_version = "3.11"
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -42,5 +55,5 @@ strict = true
 plugins = []
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"

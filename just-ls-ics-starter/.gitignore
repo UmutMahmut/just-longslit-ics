@@ -1,0 +1,22 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.env.*
+.pytest_cache/
+.mypy_cache/
+.cache/
+dist/
+build/
+
+# OS / 编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 文档构建产物
+site/
+docs/site/
