@@ -215,6 +215,33 @@
       margin-top: 2px;
     }
 
+    /* 顶部时间块 */
+
+    .time-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      font-size: 11px;
+      min-width: 120px;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .time-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+    }
+
     /* 顶部 Tab 导航 */
 
     .tabs {
@@ -380,6 +407,11 @@
       gap: 14px;
     }
 
+    /* 概览页布局：左侧图像略宽一点 */
+    .layout-2col.layout-overview-main {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    }
+
     @media (max-width: 900px) {
       .layout-2col {
         grid-template-columns: minmax(0, 1fr);
@@ -487,6 +519,27 @@
 
     .checkbox-pill input {
       accent-color: var(--accent);
+    }
+
+    /* 实时图像样式 */
+
+    .live-image-wrapper {
+      width: 100%;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      border: 1px solid rgba(31,41,55,0.9);
+      background: #020617;
+      overflow: hidden;
+    }
+
+    .slitcam-image {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      display: block;
     }
 
     /* 观测计划表格 */
@@ -639,6 +692,23 @@
           <div class="title-tag">SHANGHAI JIAO TONG UNIVERSITY · JUST TELESCOPE ICS</div>
         </div>
         <div class="status-badges">
+          <!-- 时间显示 -->
+          <div class="time-block">
+            <div class="time-row">
+              <span class="time-label">Local</span>
+              <span id="time-local">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">UTC</span>
+              <span id="time-utc">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">LST</span>
+              <span id="time-lst">--:--:--</span>
+            </div>
+          </div>
+
+          <!-- 连接状态 -->
           <div class="badge" id="connection-badge">
             <span class="badge-dot" id="connection-dot"></span>
             <span id="connection-text">未连接后端</span>
@@ -655,7 +725,7 @@
         </button>
         <button class="tab" data-tab="slit">
           狭缝与狭缝相机
-          <span class="tab-pill">Slit & SlitCam</span>
+          <span class="tab-pill">Slit &amp; SlitCam</span>
         </button>
         <button class="tab" data-tab="calibration">
           定标
@@ -683,36 +753,35 @@
       <main class="tab-content">
         <!-- 概览 -->
         <section class="tab-panel tab-panel-active" data-tab-panel="overview">
-          <div class="layout-2col">
-            <!-- 左：仪器状态 -->
+          <!-- 上部：实时图像 + 快速控制 -->
+          <div class="layout-2col layout-overview-main">
+            <!-- 左：实时图像 -->
             <section class="panel">
               <div class="panel-header">
                 <div>
-                  <div class="panel-title">仪器状态 / Instrument Status</div>
-                  <div class="panel-kicker">从 <code>/status</code> 接口自动抓取</div>
+                  <div class="panel-title">实时图像 / Live View</div>
+                  <div class="panel-kicker">来自狭缝相机或导星相机的实时画面</div>
                 </div>
                 <div class="panel-actions">
-                  <span class="hint">打开页面后会自动刷新一次</span>
+                  <span class="hint">前端轮询后端图像接口（示例：GET /slitcam/frame）。</span>
                 </div>
               </div>
 
-              <div class="status-summary">
-                <div class="status-chip">
-                  <div class="status-chip-label">SLIT</div>
-                  <div class="status-chip-value" id="chip-slit">—</div>
+              <div class="control-card">
+                <div class="control-title">
+                  实时画面
+                  <span class="control-sub">Live Feed</span>
                 </div>
-                <div class="status-chip">
-                  <div class="status-chip-label">GRATING</div>
-                  <div class="status-chip-value" id="chip-grating">—</div>
+                <div class="live-image-wrapper">
+                  <img
+                    id="slitcam-image"
+                    alt="Slit / Guiding Camera Live View"
+                    class="slitcam-image"
+                  />
                 </div>
-                <div class="status-chip">
-                  <div class="status-chip-label">LAMPS</div>
-                  <div class="status-chip-value" id="chip-lamp">—</div>
+                <div class="hint">
+                  若长时间无图像，请检查相机服务与网络连接；刷新间隔可在 JS 中调整。
                 </div>
-              </div>
-
-              <div class="status-raw">
-                <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待从 /status 加载数据...</pre>
               </div>
             </section>
 
@@ -842,11 +911,55 @@
             </section>
           </div>
 
+          <!-- 中部：仪器状态摘要 + 原始 JSON -->
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">仪器状态 / Instrument Status</div>
+                <div class="panel-kicker">从 <code>/status</code> 接口自动抓取</div>
+              </div>
+              <div class="panel-actions">
+                <span class="hint">打开页面后会自动刷新一次，可结合右上角按钮手动刷新。</span>
+              </div>
+            </div>
+
+            <div class="status-summary">
+              <div class="status-chip">
+                <div class="status-chip-label">SLIT</div>
+                <div class="status-chip-value" id="chip-slit">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">GRATING</div>
+                <div class="status-chip-value" id="chip-grating">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">LAMPS</div>
+                <div class="status-chip-value" id="chip-lamp">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">OBS MODE</div>
+                <div class="status-chip-value" id="chip-obs-mode">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">TARGET</div>
+                <div class="status-chip-value" id="chip-target">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">EXPOSURE</div>
+                <div class="status-chip-value" id="chip-exposure">—</div>
+              </div>
+            </div>
+
+            <div class="status-raw">
+              <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待从 /status 加载数据...</pre>
+            </div>
+          </section>
+
           <!-- 底部事件日志（全局共用） -->
           <section class="log-panel">
             <div class="log-header">
               <span>事件日志 / Event Log</span>
-              <span id="log-hint">只保留最近 50 条</span>
+              <span id="log-hint">只保留最近 5 条</span>
             </div>
             <ul class="log-list" id="log-list"></ul>
           </section>
@@ -998,7 +1111,7 @@
               <div class="control-card">
                 <div class="control-title">
                   定标灯与快门
-                  <span class="control-sub">Lamps & Shutter</span>
+                  <span class="control-sub">Lamps &amp; Shutter</span>
                 </div>
                 <ul class="todo-list">
                   <li>细化到具体灯种：ThAr、Ne、HgCd、Flat 等。</li>
@@ -1161,7 +1274,7 @@
               <div class="control-card">
                 <div class="control-title">
                   焦点与位置
-                  <span class="control-sub">Focus & Position</span>
+                  <span class="control-sub">Focus &amp; Position</span>
                 </div>
                 <ul class="todo-list">
                   <li>显示当前焦点位置（单位步数），及硬件连接状态。</li>
@@ -1276,6 +1389,13 @@
     // 若前后端同源部署，可以改为 window.location.origin
     const API_BASE = "http://127.0.0.1:8000";
 
+    // 实时图像：后端需提供当前帧接口（示例：GET /slitcam/frame）
+    const SLITCAM_IMAGE_URL = `${API_BASE}/slitcam/frame`;
+    const SLITCAM_REFRESH_MS = 2000; // ms，可按需要调整刷新频率
+
+    // 观测台经度（东经为正，单位度），请改成实际台址经度
+    const OBS_LONGITUDE_DEG = 121.60424;
+
     const connectionDot = document.getElementById("connection-dot");
     const connectionText = document.getElementById("connection-text");
     const refreshStatusBtn = document.getElementById("refresh-status-btn");
@@ -1284,6 +1404,9 @@
     const chipSlit = document.getElementById("chip-slit");
     const chipGrating = document.getElementById("chip-grating");
     const chipLamp = document.getElementById("chip-lamp");
+    const chipObsMode = document.getElementById("chip-obs-mode");
+    const chipTarget = document.getElementById("chip-target");
+    const chipExposure = document.getElementById("chip-exposure");
 
     const slitForm = document.getElementById("slit-form");
     const gratingForm = document.getElementById("grating-form");
@@ -1300,10 +1423,18 @@
     const logList = document.getElementById("log-list");
     const logListFull = document.getElementById("log-list-full");
 
+    const slitcamImg = document.getElementById("slitcam-image");
+
+    const timeLocalSpan = document.getElementById("time-local");
+    const timeUtcSpan = document.getElementById("time-utc");
+    const timeLstSpan = document.getElementById("time-lst");
+
     let isStatusLoading = false;
     let fullLogEnabled = true;
-    const MAX_INLINE_LOG = 50;
+    const MAX_INLINE_LOG = 5;
     const MAX_FULL_LOG = 200;
+
+    let slitcamTimer = null;
 
     // === Tab 切换 ===
     const tabs = document.querySelectorAll(".tab");
@@ -1363,6 +1494,92 @@
       addLog("日志已清空。", "info");
     }
 
+    // === 工具：时间格式 ===
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function fmtHMS(h, m, s) {
+      return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+    }
+
+    // Date -> Julian Date
+    function dateToJulianDate(date) {
+      const time = date.getTime(); // ms since 1970-01-01T00:00:00Z
+      const JD_UNIX_EPOCH = 2440587.5; // JD of 1970-01-01
+      return time / 86400000 + JD_UNIX_EPOCH;
+    }
+
+    // 计算 GMST（小时）
+    function gmstInHours(date) {
+      const JD = dateToJulianDate(date);
+      const D = JD - 2451545.0; // days since J2000.0
+      let GMST = 18.697374558 + 24.06570982441908 * D; // hours
+      GMST = ((GMST % 24) + 24) % 24;
+      return GMST;
+    }
+
+    // 计算本地恒星时 LST（小时）
+    function lstInHours(date, longitudeDeg) {
+      let lst = gmstInHours(date) + longitudeDeg / 15.0;
+      lst = ((lst % 24) + 24) % 24;
+      return lst;
+    }
+
+    function hoursToHMSString(h) {
+      const totalSeconds = Math.floor(h * 3600 + 0.5);
+      const hh = Math.floor(totalSeconds / 3600);
+      const mm = Math.floor((totalSeconds % 3600) / 60);
+      const ss = totalSeconds % 60;
+      return fmtHMS(hh, mm, ss);
+    }
+
+    function updateClockBasic(now) {
+      if (timeLocalSpan) {
+        const h = now.getHours();
+        const m = now.getMinutes();
+        const s = now.getSeconds();
+        timeLocalSpan.textContent = fmtHMS(h, m, s);
+      }
+
+      if (timeUtcSpan) {
+        const h = now.getUTCHours();
+        const m = now.getUTCMinutes();
+        const s = now.getUTCSeconds();
+        timeUtcSpan.textContent = fmtHMS(h, m, s);
+      }
+    }
+
+    function updateClockFull() {
+      const now = new Date();
+      updateClockBasic(now);
+
+      if (timeLstSpan) {
+        const lstHours = lstInHours(now, OBS_LONGITUDE_DEG);
+        timeLstSpan.textContent = hoursToHMSString(lstHours);
+      }
+    }
+
+    // === 实时图像 ===
+    function refreshSlitcamOnce() {
+      if (!slitcamImg || !SLITCAM_IMAGE_URL) return;
+      const url = `${SLITCAM_IMAGE_URL}?t=${Date.now()}`;
+      slitcamImg.src = url;
+    }
+
+    function startSlitcamLoop() {
+      if (!slitcamImg || !SLITCAM_IMAGE_URL) return;
+      refreshSlitcamOnce();
+      slitcamTimer = setInterval(refreshSlitcamOnce, SLITCAM_REFRESH_MS);
+    }
+
+    if (slitcamImg) {
+      slitcamImg.addEventListener("error", () => {
+        // 图像加载失败时，保留空画面，由下方 hint 提示排查
+        addLog("实时图像加载失败或暂不可用。", "error");
+      });
+    }
+
     // === 状态显示 ===
     function setConnectionState(ok) {
       if (ok) {
@@ -1396,12 +1613,44 @@
     }
 
     function updateStatusSummary(data) {
-      chipSlit.textContent =
-        prettyValue(data.slit_width ?? data.slit ?? data.slit_state ?? "—");
-      chipGrating.textContent =
-        prettyValue(data.grating ?? data.grating_mode ?? data.grating_state ?? "—");
-      chipLamp.textContent =
-        prettyValue(data.lamps ?? data.lamp ?? data.lamp_state ?? "—");
+      if (chipSlit) {
+        chipSlit.textContent =
+          prettyValue(data.slit_width ?? data.slit ?? data.slit_state ?? "—");
+      }
+      if (chipGrating) {
+        chipGrating.textContent =
+          prettyValue(data.grating ?? data.grating_mode ?? data.grating_state ?? "—");
+      }
+      if (chipLamp) {
+        chipLamp.textContent =
+          prettyValue(data.lamps ?? data.lamp ?? data.lamp_state ?? "—");
+      }
+      if (chipObsMode) {
+        chipObsMode.textContent =
+          prettyValue(data.obs_mode ?? data.mode ?? data.observation_mode ?? "—");
+      }
+      if (chipTarget) {
+        chipTarget.textContent =
+          prettyValue(data.target_name ?? data.target ?? data.object ?? "—");
+      }
+      if (chipExposure) {
+        const t = data.exposure_time ?? data.exp_time ?? null;
+        const n =
+          data.exposure_count ??
+          data.exp_count ??
+          data.exp_num ??
+          data.exposure_index ??
+          null;
+        let text = "—";
+        if (t != null && n != null) {
+          text = `${t}s × ${n}`;
+        } else if (t != null) {
+          text = `${t}s`;
+        } else if (n != null) {
+          text = `N = ${n}`;
+        }
+        chipExposure.textContent = text;
+      }
     }
 
     async function fetchStatus() {
@@ -1563,6 +1812,13 @@
     window.addEventListener("load", () => {
       addLog("页面加载完成，准备获取初始状态。");
       fetchStatus();
+
+      // 启动时间显示（Local / UTC / LST）
+      updateClockFull();
+      setInterval(updateClockFull, 1000);
+
+      // 启动实时图像刷新
+      startSlitcamLoop();
     });
   </script>
 </body>
