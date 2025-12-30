@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     influx_token: str = ""
     influx_org: str = "just-lab"
     influx_bucket: str = "ics"
+    telemetry_enabled: bool = False
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", case_sensitive=False)
