@@ -4,10 +4,15 @@ on:
   push:
   pull_request:
 
+# setup-python 官方建议显式声明最小权限
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
+    # 你的 Python 工程在子目录下，所以统一在该目录执行命令
     defaults:
       run:
         working-directory: just-ls-ics-starter
@@ -16,19 +21,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python (pinned)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          # 锁定到具体 patch 版本；如果你更希望跟随最新 patch，可改为 "3.12"
+          python-version: "3.12.12"
           cache: "pip"
           cache-dependency-path: just-ls-ics-starter/pyproject.toml
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          pip install pytest
+          python -m pip install -U pip
+          # 安装项目本体（及其声明的运行依赖）
+          python -m pip install -e .
+          # TestClient 依赖 httpx；测试框架 pytest
+          python -m pip install -U pytest httpx
 
       - name: Run tests
+        env:
+          # 兜底：即使 editable 安装方式或路径有变动，也更稳
+          PYTHONPATH: src
         run: |
           pytest -q
