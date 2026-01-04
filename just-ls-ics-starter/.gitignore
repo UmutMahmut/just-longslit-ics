@@ -1,22 +1,44 @@
-﻿# Python
+﻿# =========================
+# Python (monorepo-wide)
+# =========================
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
-.venv/
-.env
-.env.*
+.eggs/
+pip-wheel-metadata/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 .cache/
-dist/
-build/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
 
-# OS / 编辑器
+# Virtual environments / local env
+.venv/
+venv/
+ENV/
+.env
+.env.*
+.envrc
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# =========================
+# Docs build artifacts
+# =========================
+site/
+docs/site/
+
+# =========================
+# OS / Editors
+# =========================
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
-# 文档构建产物
-site/
-docs/site/

@@ -2,3 +2,48 @@ dump-tree.cmd
 dump-tree-brief.cmd
 repo_tree.txt
 repo_tree_brief.txt
+
+# =========================
+# Python (monorepo-wide)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
+
+# Virtual environments / local env
+.venv/
+venv/
+ENV/
+.env
+.env.*
+.envrc
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# =========================
+# Docs build artifacts
+# =========================
+site/
+docs/site/
+
+# =========================
+# OS / Editors
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
