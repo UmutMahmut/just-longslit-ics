@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..config import settings
 from ..hal.base import HAL
+from ..hal.capabilities import Capabilities
 from ..hal.simulator import SimHAL
 from ..telemetry.influx import write_measurement
 
@@ -30,7 +31,6 @@ class StateDTO(BaseModel):
 
 
 @app.get("/api/v1/status", response_model=StateDTO)
-@app.get("/status", response_model=StateDTO, include_in_schema=False)
 def status() -> StateDTO:
     s = hal.get_state()
 
@@ -55,36 +55,30 @@ def status() -> StateDTO:
 class SlitReq(BaseModel):
     width_um: float = Field(..., gt=0, le=5000)
 
-    # 让 /docs 默认模板更接近可用输入
     model_config = ConfigDict(
         json_schema_extra={"examples": [{"width_um": 200.0}]}
     )
 
 
 @app.post("/api/v1/slit", response_model=StateDTO)
-@app.post("/slit", response_model=StateDTO, include_in_schema=False)
 def set_slit(req: SlitReq) -> StateDTO:
     try:
-        s = hal.set_slit_width(req.width_um)
+        s = hal.set_slit_width_um(req.width_um)
         return StateDTO.model_validate(s)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 class GratingReq(BaseModel):
-    name: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1, max_length=64)
 
-    # 关键：默认不要再给 "string"，而是给一个真实可用值
-    model_config = ConfigDict(
-        json_schema_extra={"examples": [{"name": "G1"}]}
-    )
+    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "G1"}]})
 
 
 @app.post("/api/v1/grating", response_model=StateDTO)
-@app.post("/grating", response_model=StateDTO, include_in_schema=False)
 def set_grating(req: GratingReq) -> StateDTO:
     try:
-        s = hal.select_grating(req.name)
+        s = hal.set_grating(req.name)
         return StateDTO.model_validate(s)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -92,33 +86,36 @@ def set_grating(req: GratingReq) -> StateDTO:
 
 class LampReq(BaseModel):
     on: bool
-
-    model_config = ConfigDict(
-        json_schema_extra={"examples": [{"on": True}]}
-    )
+    model_config = ConfigDict(json_schema_extra={"examples": [{"on": True}]})
 
 
 @app.post("/api/v1/lamp", response_model=StateDTO)
-@app.post("/lamp", response_model=StateDTO, include_in_schema=False)
 def set_lamp(req: LampReq) -> StateDTO:
     try:
-        s = hal.set_lamp(req.on)
+        s = hal.set_calib_lamp_on(req.on)
         return StateDTO.model_validate(s)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/v1/capabilities", response_model=Capabilities)
+def capabilities() -> Capabilities:
+    return hal.get_capabilities()
 
 
 # UI: 静态托管（html=True 会在目录存在 index.html 时自动加载）
 BASE_DIR = Path(__file__).resolve().parents[3]  # -> ...\just-ls-ics-starter
 UI_DIR = BASE_DIR / "ui"
 
+_ROOT_REDIRECT = "/docs"
 if UI_DIR.is_dir():
-    # StaticFiles(check_dir=True) 默认会在实例化时检查目录存在，缺失会抛 RuntimeError
-    # 这里我们先 is_dir()，避免因 UI 目录问题导致后端起不来。:contentReference[oaicite:1]{index=1}
+    # StaticFiles 会在目录缺失时导致启动失败，因此先检查目录存在
     app.mount("/ui", StaticFiles(directory=str(UI_DIR), html=True), name="ui")
+    _ROOT_REDIRECT = "/ui/"
 else:
     logger.warning("UI directory not found: %s (skip mounting /ui)", UI_DIR)
 
+
 @app.get("/", include_in_schema=False)
 def root():
-    return RedirectResponse(url="/ui/")
+    return RedirectResponse(url=_ROOT_REDIRECT)
