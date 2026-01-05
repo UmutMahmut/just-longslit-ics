@@ -1,23 +1,45 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-@dataclass
-class InstrumentState:
-    slit_width_um: float = 100.0
-    grating: str = "G1"
-    lamp_on: bool = False
-    temperature_c: float = 20.0
+from .capabilities import Capabilities
+
+
+@dataclass(frozen=True)
+class State:
+    slit_width_um: float
+    grating: str
+    lamp_on: bool
+    temperature_c: float
+
 
 class HAL(ABC):
-    @abstractmethod
-    def get_state(self) -> InstrumentState: ...
+    """Hardware Abstraction Layer (HAL) for JUST Long-Slit ICS.
+
+    New interface ONLY (旧接口不保留):
+      - set_slit_width_um
+      - set_grating
+      - set_calib_lamp_on
+      - get_state / get_capabilities
+    """
 
     @abstractmethod
-    def set_slit_width(self, width_um: float) -> InstrumentState: ...
+    def get_state(self) -> State:
+        raise NotImplementedError
 
     @abstractmethod
-    def select_grating(self, name: str) -> InstrumentState: ...
+    def get_capabilities(self) -> Capabilities:
+        raise NotImplementedError
 
     @abstractmethod
-    def set_lamp(self, on: bool) -> InstrumentState: ...
+    def set_slit_width_um(self, width_um: float) -> State:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_grating(self, name: str) -> State:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_calib_lamp_on(self, on: bool) -> State:
+        raise NotImplementedError
