@@ -1,14 +1,15 @@
-# JUST Long-Slit ICS
+﻿# JUST Long-Slit ICS
 
 [![CI](https://github.com/UmutMahmut/just-longslit-ics/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/UmutMahmut/just-longslit-ics/actions/workflows/ci.yml)
 
 Instrument Control System (ICS) prototype for the JUST Telescope **Long-Slit Spectrograph**.
 
 This repository currently provides:
-- A versioned **FastAPI** backend with a stable v0.1 contract
+- A versioned **FastAPI** backend with a stable v0.1 contract (`/api/v1/*`)
 - A **SimHAL** simulator enabling end-to-end operation without hardware
-- Static UI served by the backend for zero-CORS local integration
+- Static UI served by the backend at `/ui/` for zero-CORS local integration
 - A reproducible engineering pipeline: **demo script + pytest regression + GitHub Actions CI**
+- A maintenance sweep script (optional) to detect legacy endpoint references in docs
 
 ---
 
@@ -16,16 +17,19 @@ This repository currently provides:
 
 ### Completed
 - **Sprint 0 (Baseline runnable skeleton)**
-  - API v0.1 available at `/api/v1/*` with compatibility aliases (`/status`, `/slit`, `/grating`, `/lamp`)
+  - API v0.1 available at `/api/v1/*`
   - Static UI served by backend at `/ui/`
   - Telemetry is configurable and **disabled by default** (`telemetry_enabled=false`)
 - **Sprint 1 (Reproducible + regression-safe)**
   - One-click demo script (`just-ls-ics-starter/scripts/demo_flow.ps1`) for E2E flow
-  - Minimal pytest regression tests (local)
-  - GitHub Actions CI on push/PR, gated by branch protection (`test` status check)
+  - Pytest regression suite + GitHub Actions CI on push/PR
+- **Sprint 2 (UI + simulator hardening + contract alignment)**
+  - UI upgraded for stable local integration (status polling, request feedback, operation logs)
+  - `/api/v1/status/full` stabilized; capabilities surfaced for UI/clients
+  - SimHAL + subsystem boundary cleaned up for predictable behavior
+  - Docs/contract endpoint references unified to `/api/v1/*`
 
 ### Next
-- **Sprint 2**: UI usability + simulator realism (do not introduce external simulators yet)
 - **Sprint 3**: Packaging & distribution (training-friendly “double-click run” first; `.exe` later if needed)
 
 ---
@@ -36,7 +40,7 @@ This repository currently provides:
   - `src/justls/ics/api.py` — FastAPI entry (serves API + UI)
   - `ui/` — static UI assets (served at `/ui/`)
   - `scripts/demo_flow.ps1` — one-click demo flow (PowerShell)
-  - `tests/` — minimal regression tests
+  - `tests/` — regression + optional stress tests
   - `docs/api/contract.md` — API contract (human-readable)
 - `.github/workflows/ci.yml` — GitHub Actions CI (pytest)
 
@@ -50,7 +54,6 @@ CI is pinned to Python 3.12.x. For best consistency, use Python 3.12.x locally a
 If you use conda:
 ```powershell
 conda activate dino
-```
 
 ### 1) Install (editable)
 From repository root:
@@ -78,13 +81,13 @@ python -m uvicorn justls.ics.api:app --host 127.0.0.1 --port 8000 --reload
 The v0.1 contract is described in:
 - `just-ls-ics-starter/docs/api/contract.md`
 
-Implemented endpoints:
-- `GET  /api/v1/status`  (alias: `GET /status`)
-- `POST /api/v1/slit`    (alias: `POST /slit`)    body: `{"width_um": 200}`
-- `POST /api/v1/grating` (alias: `POST /grating`) body: `{"name": "G1"}`
-- `POST /api/v1/lamp`    (alias: `POST /lamp`)    body: `{"on": true}`
-
----
+Canonical endpoints:
+- `GET /api/v1/status`  
+- `GET /api/v1/status/full`   
+- `GET /api/v1/capabilities` 
+- `POST /api/v1/slit body`   
+- `POST /api/v1/grating body`    
+- `POST /api/v1/lamp body`    
 
 ## Demo (one-click)
 
