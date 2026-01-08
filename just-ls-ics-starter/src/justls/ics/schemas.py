@@ -26,7 +26,7 @@ class GratingReq(BaseModel):
 
 
 class LampReq(BaseModel):
-    on: bool
+    on: bool = Field(..., strict=True)
     model_config = ConfigDict(json_schema_extra={"examples": [{"on": True}]})
 
 

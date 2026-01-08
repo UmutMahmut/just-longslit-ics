@@ -46,4 +46,7 @@ docs/site/
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/
+.idea/# --- ICS local sweep outputs ---
+just-ls-ics-starter/scripts/sweep_out/
+**/repo_sweep_*.log
+**/repo_sweep_*.summary.json

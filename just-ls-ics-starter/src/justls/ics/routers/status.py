@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,4 +54,7 @@ def status_full() -> dict:
     return {
         "state": StateDTO.model_validate(s).model_dump(),
         "capabilities": rt.system.get_capabilities_dict(),
+        "hal": type(rt.hal).__name__,
+        "run_mode": settings.run_mode,
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }

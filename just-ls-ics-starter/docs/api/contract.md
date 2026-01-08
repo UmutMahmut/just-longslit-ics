@@ -1,4 +1,4 @@
-# JUST Long-Slit ICS – API Contract (v0.1)
+﻿# JUST Long-Slit ICS 鈥?API Contract (v0.1)
 
 Base URL (local):
 - http://127.0.0.1:8000
@@ -14,7 +14,7 @@ UI (static, served by backend):
 
 ## 1. Versioned API (Contract)
 
-### 1.1 GET /api/v1/status
+### 1.1 GET /api/v1/api/v1/status
 Return current instrument state.
 
 Response 200 (application/json):

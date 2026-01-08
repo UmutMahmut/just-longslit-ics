@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import asdict
 
-from ...hal.base import HAL
+from ...hal.base import HAL, State
+from ...hal.capabilities import Capabilities
 
 
 class SystemSubsystem:
-    """
-    Cross-cutting system façade.
-    Owns the canonical 'get_state' and 'capabilities' readouts.
-    """
-
     def __init__(self, hal: HAL) -> None:
         self._hal = hal
 
-    def get_state(self) -> Any:
+    def get_state(self) -> State:
         return self._hal.get_state()
 
+    def get_state_dict(self) -> dict:
+        return asdict(self.get_state())
+
+    def get_capabilities(self) -> Capabilities:
+        return self._hal.get_capabilities()
+
     def get_capabilities_dict(self) -> dict:
-        caps = self._hal.capabilities()
-        # 你的 capabilities 对象已实现 to_dict()
-        return caps.to_dict()
+        return self.get_capabilities().model_dump()
 
     def get_status_full(self) -> dict:
         return {
-            "state": self.get_state(),
+            "state": self.get_state_dict(),
             "capabilities": self.get_capabilities_dict(),
         }

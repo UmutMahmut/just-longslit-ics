@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JUST 长缝光谱仪 · 静态界面样稿（MVP）</title>
+  <title>JUST 闀跨紳鍏夎氨浠?路 闈欐€佺晫闈㈡牱绋匡紙MVP锛?/title>
   <style>
     :root{
       --bg:#f5f7fb;
@@ -70,62 +70,62 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>JUST 长缝光谱仪 · 控制系统（静态样稿）</h1>
+    <h1>JUST 闀跨紳鍏夎氨浠?路 鎺у埗绯荤粺锛堥潤鎬佹牱绋匡級</h1>
 
     <section class="kpis">
-      <div class="card kpi"><div class="lab">仪器状态</div><div class="val"><span class="big" data-id="kpi_state">在线</span><span class="tag pill">模拟器</span></div></div>
-      <div class="card kpi"><div class="lab">当前模式</div><div class="val"><span class="big" data-id="kpi_mode">Spectroscopy</span><span class="tag pill">长缝</span></div></div>
-      <div class="card kpi"><div class="lab">遥测写入</div><div class="val"><span class="big" data-id="kpi_ingest">—</span><span class="tag pill">Influx</span></div></div>
-      <div class="card kpi"><div class="lab">最近操作</div><div class="val"><span class="big" data-id="kpi_lastop">无</span><span class="tag pill">本地演示</span></div></div>
+      <div class="card kpi"><div class="lab">浠櫒鐘舵€?/div><div class="val"><span class="big" data-id="kpi_state">鍦ㄧ嚎</span><span class="tag pill">妯℃嫙鍣?/span></div></div>
+      <div class="card kpi"><div class="lab">褰撳墠妯″紡</div><div class="val"><span class="big" data-id="kpi_mode">Spectroscopy</span><span class="tag pill">闀跨紳</span></div></div>
+      <div class="card kpi"><div class="lab">閬ユ祴鍐欏叆</div><div class="val"><span class="big" data-id="kpi_ingest">鈥?/span><span class="tag pill">Influx</span></div></div>
+      <div class="card kpi"><div class="lab">鏈€杩戞搷浣?/div><div class="val"><span class="big" data-id="kpi_lastop">鏃?/span><span class="tag pill">鏈湴婕旂ず</span></div></div>
     </section>
 
     <section class="grid">
       <div class="col">
         <div class="card panel">
-          <h2>仪器总览 <span class="muted" data-id="clock">--:--:--</span></h2>
+          <h2>浠櫒鎬昏 <span class="muted" data-id="clock">--:--:--</span></h2>
           <div class="tile">
             <div class="tile-hd">
-              <div>长缝光谱仪 · JUST-LS</div>
+              <div>闀跨紳鍏夎氨浠?路 JUST-LS</div>
               <div class="row">
-                <span class="chip" data-id="inst_state">运行中</span>
+                <span class="chip" data-id="inst_state">杩愯涓?/span>
                 <span class="chip" data-id="inst_task">Idle</span>
               </div>
             </div>
             <div class="tile-body">
               <div class="kv">
-                <div><b>狭缝宽度 (μm)</b><span data-id="slit_width">100.0</span></div>
-                <div><b>光栅 (Grating)</b><span data-id="grating">G1</span></div>
-                <div><b>中心波长 (nm)</b><span data-id="central_wl">550.0</span></div>
-                <div><b>相机模式</b><span data-id="cam_mode">Fast/ 1×1</span></div>
-                <div><b>CCD 温度</b><span data-id="ccd_temp">-25.0°C</span></div>
-                <div><b>校准灯</b><span data-id="lamp_state">OFF</span></div>
-                <div><b>环境温度</b><span data-id="env_temp">18.3°C</span></div>
-                <div><b>大气质量</b><span data-id="airmass">1.12</span></div>
+                <div><b>鐙紳瀹藉害 (渭m)</b><span data-id="slit_width">100.0</span></div>
+                <div><b>鍏夋爡 (Grating)</b><span data-id="grating">G1</span></div>
+                <div><b>涓績娉㈤暱 (nm)</b><span data-id="central_wl">550.0</span></div>
+                <div><b>鐩告満妯″紡</b><span data-id="cam_mode">Fast/ 1脳1</span></div>
+                <div><b>CCD 娓╁害</b><span data-id="ccd_temp">-25.0掳C</span></div>
+                <div><b>鏍″噯鐏?/b><span data-id="lamp_state">OFF</span></div>
+                <div><b>鐜娓╁害</b><span data-id="env_temp">18.3掳C</span></div>
+                <div><b>澶ф皵璐ㄩ噺</b><span data-id="airmass">1.12</span></div>
               </div>
             </div>
           </div>
 
           <div class="controls" style="margin-top:12px">
-            <div><label>狭缝宽度 (μm)</label><input type="number" id="inp_slit" min="10" max="5000" step="10" value="100"></div>
-            <div><label>光栅</label><select id="sel_grating"><option>G1</option><option>G2</option><option>G3</option></select></div>
-            <div><label>中心波长 (nm)</label><input type="number" id="inp_wl" min="300" max="1000" step="1" value="550"></div>
-            <div><label>校准灯</label><select id="sel_lamp"><option value="off">OFF</option><option value="ne">Neon</option><option value="ar">Argon</option><option value="hg">Hg</option></select><[...]
-            <div style="display:flex;align-items:flex-end"><button class="btn" id="btn_preview">预览变更</button></div>
-            <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" id="btn_apply">应用（占位）</button></div>
+            <div><label>鐙紳瀹藉害 (渭m)</label><input type="number" id="inp_slit" min="10" max="5000" step="10" value="100"></div>
+            <div><label>鍏夋爡</label><select id="sel_grating"><option>G1</option><option>G2</option><option>G3</option></select></div>
+            <div><label>涓績娉㈤暱 (nm)</label><input type="number" id="inp_wl" min="300" max="1000" step="1" value="550"></div>
+            <div><label>鏍″噯鐏?/label><select id="sel_lamp"><option value="off">OFF</option><option value="ne">Neon</option><option value="ar">Argon</option><option value="hg">Hg</option></select><[...]
+            <div style="display:flex;align-items:flex-end"><button class="btn" id="btn_preview">棰勮鍙樻洿</button></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" id="btn_apply">搴旂敤锛堝崰浣嶏級</button></div>
           </div>
-          <div class="muted" style="margin-top:6px">提示：当前为静态样稿；“应用”暂不调用后端，仅更新页面。后续将对接 <code>/api/v1/</code> 系列接口。</div>
+          <div class="muted" style="margin-top:6px">鎻愮ず锛氬綋鍓嶄负闈欐€佹牱绋匡紱鈥滃簲鐢ㄢ€濇殏涓嶈皟鐢ㄥ悗绔紝浠呮洿鏂伴〉闈€傚悗缁皢瀵规帴 <code>/api/v1/</code> 绯诲垪鎺ュ彛銆?/div>
         </div>
 
         <div class="card panel">
-          <h2>队列 / 计划（示意） <span class="muted">前 8 条</span></h2>
+          <h2>闃熷垪 / 璁″垝锛堢ず鎰忥級 <span class="muted">鍓?8 鏉?/span></h2>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>起止</th><th>目标/模式</th><th>设置</th><th>状态</th></tr></thead>
+              <thead><tr><th>璧锋</th><th>鐩爣/妯″紡</th><th>璁剧疆</th><th>鐘舵€?/th></tr></thead>
               <tbody id="queue">
-                <tr><td>20:00–20:15</td><td>Bias × 20</td><td>Cam Fast/1×1</td><td>完成</td></tr>
-                <tr><td>20:20–20:35</td><td>Flat × 10</td><td>G1 / 550nm / slit 100μm</td><td>进行中</td></tr>
-                <tr><td>20:40–21:10</td><td>Arc (Ne)</td><td>G1 / 550nm / lamp Ne</td><td>排队</td></tr>
-                <tr><td>21:15–22:00</td><td>Science</td><td>G2 / 650nm / slit 120μm</td><td>排队</td></tr>
+                <tr><td>20:00鈥?0:15</td><td>Bias 脳 20</td><td>Cam Fast/1脳1</td><td>瀹屾垚</td></tr>
+                <tr><td>20:20鈥?0:35</td><td>Flat 脳 10</td><td>G1 / 550nm / slit 100渭m</td><td>杩涜涓?/td></tr>
+                <tr><td>20:40鈥?1:10</td><td>Arc (Ne)</td><td>G1 / 550nm / lamp Ne</td><td>鎺掗槦</td></tr>
+                <tr><td>21:15鈥?2:00</td><td>Science</td><td>G2 / 650nm / slit 120渭m</td><td>鎺掗槦</td></tr>
               </tbody>
             </table>
           </div>
@@ -134,34 +134,34 @@
 
       <div class="col">
         <div class="card panel">
-          <h2>时间信息 <span class="muted">实时更新</span></h2>
+          <h2>鏃堕棿淇℃伅 <span class="muted">瀹炴椂鏇存柊</span></h2>
           <div class="row">
-            <span class="pill" style="width:100%">UTC：<span data-id="time_utc">--:--:--</span></span>
-            <span class="pill" style="width:100%">CST：<span data-id="time_cst">--:--:--</span></span>
-            <span class="pill" style="width:100%">LST：<span data-id="time_lst">--:--:--</span></span>
+            <span class="pill" style="width:100%">UTC锛?span data-id="time_utc">--:--:--</span></span>
+            <span class="pill" style="width:100%">CST锛?span data-id="time_cst">--:--:--</span></span>
+            <span class="pill" style="width:100%">LST锛?span data-id="time_lst">--:--:--</span></span>
           </div>
         </div>
 
         <div class="card panel">
-          <h2>系统资源（示意）</h2>
+          <h2>绯荤粺璧勬簮锛堢ず鎰忥級</h2>
           <div class="row" style="gap:14px">
             <div style="flex:1"><div class="muted">Storage</div><div class="gbar"><i style="width:38%" data-id="bar_storage"></i></div></div>
             <div style="flex:1"><div class="muted">Network</div><div class="gbar"><i style="width:66%" data-id="bar_net"></i></div></div>
           </div>
           <div class="row" style="margin-top:8px">
-            <span class="pill">CPU：<span data-id="cpu">22%</span></span>
-            <span class="pill">内存：<span data-id="mem">58%</span></span>
-            <span class="pill">Influx：<span data-id="influx">连接待配</span></span>
+            <span class="pill">CPU锛?span data-id="cpu">22%</span></span>
+            <span class="pill">鍐呭瓨锛?span data-id="mem">58%</span></span>
+            <span class="pill">Influx锛?span data-id="influx">杩炴帴寰呴厤</span></span>
           </div>
         </div>
 
         <div class="card panel">
-          <h2>最近事件（示意）</h2>
+          <h2>鏈€杩戜簨浠讹紙绀烘剰锛?/h2>
           <div style="height:220px;overflow:auto;background:#0b1220;color:#d0d6e1;border-radius:8px;font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:10px;line-height:1.5" id="log">
-[19:00:01] UI 初始化完成
-[19:02:37] 预览：slit 100→120 μm
-[19:10:12] 预览：grating G1→G2
-[19:12:45] 预览：central_wl 550→650 nm
+[19:00:01] UI 鍒濆鍖栧畬鎴?
+[19:02:37] 棰勮锛歴lit 100鈫?20 渭m
+[19:10:12] 棰勮锛歡rating G1鈫扜2
+[19:12:45] 棰勮锛歝entral_wl 550鈫?50 nm
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@ function render(){
   setText('grating', STATE.grating);
   setText('central_wl', STATE.central_wl.toFixed(1));
   setText('lamp_state', STATE.lamp === 'off' ? 'OFF' : STATE.lamp.toUpperCase());
-  setText('ccd_temp', STATE.ccd_temp.toFixed(1)+'°C');
+  setText('ccd_temp', STATE.ccd_temp.toFixed(1)+'掳C');
 }
 render();
 
@@ -208,16 +208,16 @@ $('#btn_preview')?.addEventListener('click', ()=>{
   const lamp = $('#sel_lamp').value;
 
   const changes = [];
-  if (slit !== STATE.slit_width) changes.push(`slit ${STATE.slit_width}→${slit} μm`);
-  if (grat !== STATE.grating)    changes.push(`grating ${STATE.grating}→${grat}`);
-  if (wl   !== STATE.central_wl) changes.push(`central_wl ${STATE.central_wl}→${wl} nm`);
-  if (lamp !== STATE.lamp)       changes.push(`lamp ${STATE.lamp}→${lamp}`);
+  if (slit !== STATE.slit_width) changes.push(`slit ${STATE.slit_width}鈫?{slit} 渭m`);
+  if (grat !== STATE.grating)    changes.push(`grating ${STATE.grating}鈫?{grat}`);
+  if (wl   !== STATE.central_wl) changes.push(`central_wl ${STATE.central_wl}鈫?{wl} nm`);
+  if (lamp !== STATE.lamp)       changes.push(`lamp ${STATE.lamp}鈫?{lamp}`);
   if (!changes.length) return;
 
   const log = $('#log');
   const stamp = new Date().toTimeString().slice(0,8);
   log.textContent += `
-[${stamp}] 预览：` + changes.join(' | ');
+[${stamp}] 棰勮锛歚 + changes.join(' | ');
   log.scrollTop = log.scrollHeight;
 
   STATE.slit_width = slit; STATE.grating = grat; STATE.central_wl = wl; STATE.lamp = lamp;
@@ -228,7 +228,7 @@ $('#btn_apply')?.addEventListener('click', ()=>{
   const log = $('#log');
   const stamp = new Date().toTimeString().slice(0,8);
   log.textContent += `
-[${stamp}] （占位）将调用后端 /api/v1/slit /grating 等接口`;
+[${stamp}] 锛堝崰浣嶏級灏嗚皟鐢ㄥ悗绔?/api/v1/api/v1/slit /api/v1/grating 绛夋帴鍙;
   log.scrollTop = log.scrollHeight;
 });
 
