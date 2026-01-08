@@ -1,14 +1,1761 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <title>JUST Long-Slit ICS UI</title>
-  <!-- 0 秒后跳转到 docs/ui/longslit_ui_static.html -->
-  <meta http-equiv="refresh" content="0; url=ui/longslit_ui_static.html">
+  <meta charset="UTF-8" />
+  <title>JUST 长缝光谱仪控制面板</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-panel: #020617;
+      --bg-elevated: #0b1120;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --border: #1f2937;
+      --border-strong: #4b5563;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --success: #4ade80;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --radius-xl: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #020617 0%, #000 55%, #020617 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1300px;
+      background: linear-gradient(165deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      border-radius: 24px;
+      border: 1px solid rgba(55, 65, 81, 0.7);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 20px 14px;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.18), transparent 55%),
+        radial-gradient(circle at 105% -5%, rgba(56, 189, 248, 0.18), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at left top, rgba(15,23,42,0.8), rgba(15,23,42,0.95));
+      border: 1px solid rgba(75,85,99,0.6);
+      flex-wrap: wrap;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 260px;
+    }
+
+    .title-main {
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+    }
+
+    .badge-pill {
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-size: 11px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+    }
+
+    .status-badges {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background-color: rgba(15, 23, 42, 0.9);
+      white-space: nowrap;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--muted);
+      box-shadow: 0 0 12px rgba(148, 163, 184, 0.9);
+    }
+
+    .badge-dot--ok {
+      background: var(--success);
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.9);
+    }
+
+    .badge-dot--error {
+      background: #f97373;
+      box-shadow: 0 0 14px rgba(248, 113, 113, 0.95);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 12px;
+      padding: 5px 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6);
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, rgba(59, 130, 246, 0.95), rgba(56, 189, 248, 0.95));
+      border: none;
+      color: #0b1120;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 0 0 1px rgba(191, 219, 254, 0.9), 0 12px 30px rgba(37, 99, 235, 0.65);
+    }
+
+    .btn-sm { padding: 4px 9px; font-size: 11px; }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+      border-color: rgba(75, 85, 99, 0.7);
+    }
+
+    .hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    .time-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      font-size: 11px;
+      min-width: 120px;
+    }
+
+    .time-row { display: flex; justify-content: space-between; gap: 6px; }
+    .time-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+
+    .baseurl-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+    }
+
+    .baseurl-box label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-right: 2px;
+    }
+
+    .baseurl-box input[type="text"] {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+      width: 240px;
+      max-width: 52vw;
+    }
+
+    .baseurl-box input[type="text"]:focus {
+      border-color: rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6);
+    }
+
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      border: 1px solid rgba(55,65,81,0.9);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 12px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      border-color: rgba(75,85,99,0.9);
+      background: rgba(15,23,42,0.9);
+    }
+
+    .tab-active {
+      color: #e5edff;
+      font-weight: 500;
+      border-color: rgba(59,130,246,0.9);
+      background: radial-gradient(circle at top left, rgba(37,99,235,0.9), rgba(59,130,246,0.5));
+      box-shadow: 0 0 0 1px rgba(191,219,254,0.9), 0 10px 26px rgba(30,64,175,0.8);
+    }
+
+    .tab:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .tab-pill {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
+      color: var(--muted);
+    }
+
+    .tab-content { margin-top: 4px; }
+    .tab-panel { display: none; }
+    .tab-panel-active { display: block; }
+
+    .panel {
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(3,7,18,0.98));
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 12px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-kicker { font-size: 11px; color: var(--muted); }
+    .panel-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    .layout-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .layout-2col.layout-overview-main {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    }
+
+    @media (max-width: 900px) {
+      .layout-2col { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .control-group {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 700px) {
+      .control-group { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .control-card {
+      border-radius: 14px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      padding: 9px 10px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .control-sub { font-size: 11px; color: var(--muted); }
+
+    .form-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    label {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    input[type="number"], input[type="text"], select, textarea {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text);
+      min-width: 0;
+      flex: 1;
+      outline: none;
+    }
+
+    textarea {
+      border-radius: 12px;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.6);
+    }
+
+    .status-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .status-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .status-chip {
+      padding: 6px 8px;
+      border-radius: 13px;
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), #020617);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .status-chip-label {
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+    }
+
+    .status-chip-value { font-weight: 500; font-size: 13px; }
+
+    .status-raw {
+      margin-top: 6px;
+      border-radius: 14px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(31,41,55,0.9);
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      color: #cbd5f5;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .table th, .table td {
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      padding: 4px 6px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .table thead { background: rgba(15,23,42,0.8); }
+    .table th { font-weight: 500; color: var(--muted); }
+
+    .pill-soft {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(55,65,81,0.9);
+      color: var(--muted);
+    }
+
+    .pill-ok { border-color: rgba(34,197,94,0.7); color: #bbf7d0; }
+    .pill-na { border-color: rgba(248,113,113,0.6); color: #fecaca; }
+
+    .log-panel {
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      background: radial-gradient(circle at bottom, rgba(15,23,42,0.96), #020617);
+      padding: 9px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow: hidden;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .log-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      max-height: 160px;
+      font-size: 11px;
+    }
+
+    .log-item {
+      padding: 2px 0;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      border-bottom: 1px dashed rgba(31, 41, 55, 0.7);
+    }
+
+    .log-item:last-child { border-bottom: none; }
+
+    .log-time {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--muted);
+      flex: 0 0 84px;
+    }
+
+    .log-text { flex: 1; white-space: pre-wrap; word-break: break-word; }
+    .log-text--error { color: var(--danger); }
+    .log-text--success { color: var(--success); }
+
+    .todo-list {
+      margin: 4px 0 0;
+      padding-left: 18px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .todo-list li { margin: 2px 0; }
+
+    .pill-todo {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      color: var(--muted);
+      background: rgba(15,23,42,0.9);
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 180px 1fr 1.5fr;
+      gap: 6px;
+      font-size: 11px;
+      border-top: 1px solid rgba(31,41,55,0.7);
+      padding-top: 6px;
+    }
+
+    .kv .k { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; padding-top: 2px; }
+    .kv .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: #cbd5f5; }
+    .kv .d { color: var(--muted); }
+
+    @media (max-width: 720px) {
+      .kv { grid-template-columns: 140px 1fr; }
+      .kv .d { grid-column: 1 / -1; padding-left: 0; }
+    }
+  </style>
 </head>
 <body>
-  <p>正在跳转到 JUST 长缝光谱仪控制界面……如果没有自动跳转，请点击
-    <a href="ui/longslit_ui_static.html">这里</a>。
-  </p>
+  <div class="app">
+    <div class="app-inner">
+      <header class="app-header">
+        <div class="title-block">
+          <div class="title-main">
+            JUST 长缝光谱仪控制
+            <span class="badge-pill">Local Console · v0.2</span>
+          </div>
+          <div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
+        </div>
+
+        <div class="status-badges">
+          <div class="time-block">
+            <div class="time-row">
+              <span class="time-label">Local</span>
+              <span id="time-local">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">UTC</span>
+              <span id="time-utc">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">LST</span>
+              <span id="time-lst">--:--:--</span>
+            </div>
+          </div>
+
+          <div class="baseurl-box">
+            <label for="api-base-input">API</label>
+            <input id="api-base-input" type="text" spellcheck="false" />
+            <button class="btn btn-sm" id="api-base-save">保存</button>
+            <button class="btn btn-sm" id="api-base-reset">重置</button>
+          </div>
+
+          <div class="badge" id="connection-badge" title="连接状态（基于 /api/v1/status/full 轮询）">
+            <span class="badge-dot" id="connection-dot"></span>
+            <span id="connection-text">未连接</span>
+          </div>
+
+          <div class="badge" title="RTT / 最近成功 / 连续失败 / 当前轮询间隔">
+            <span id="conn-metrics">RTT — · OK — · FAIL 0 · 1.0s</span>
+          </div>
+
+          <button class="btn btn-sm" id="refresh-status-btn">刷新</button>
+        </div>
+      </header>
+
+      <nav class="tabs" id="main-tabs">
+        <button class="tab tab-active" data-tab="overview">总览 <span class="tab-pill">Overview</span></button>
+        <button class="tab" data-tab="env">环境监测 <span class="tab-pill">Env</span></button>
+        <button class="tab" data-tab="slit">狭缝与监测 <span class="tab-pill">Slit</span></button>
+        <button class="tab" data-tab="cal">定标 <span class="tab-pill">Cal</span></button>
+        <button class="tab" data-tab="guiding">偏置导星 <span class="tab-pill">Guider</span></button>
+        <button class="tab" data-tab="cameras">三通道相机 <span class="tab-pill">B/G/R</span></button>
+        <button class="tab" data-tab="quicklook">数据快显 <span class="tab-pill">Quicklook</span></button>
+        <button class="tab" data-tab="logs">日志 <span class="tab-pill">Logs</span></button>
+      </nav>
+
+      <main class="tab-content">
+        <!-- Overview -->
+        <section class="tab-panel tab-panel-active" data-tab-panel="overview">
+          <div class="layout-2col layout-overview-main">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">模块能力 / Capabilities</div>
+                  <div class="panel-kicker">来自 <code>/api/v1/status/full</code> 的 capabilities（用于占位模块启用/禁用）</div>
+                </div>
+                <div class="panel-actions">
+                  <span class="pill-soft" id="pill-runmode">RUN_MODE —</span>
+                  <span class="pill-soft" id="pill-hal">HAL —</span>
+                </div>
+              </div>
+
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>模块</th>
+                    <th>状态</th>
+                    <th>说明</th>
+                  </tr>
+                </thead>
+                <tbody id="cap-table-body"></tbody>
+              </table>
+
+              <div class="hint">说明：外部 OCS/TCS/队列不在本 Sprint 范围，UI 仅保留占位，不对接实际控制。</div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">快速控制 / Quick Controls</div>
+                  <div class="panel-kicker">真实可控项：狭缝 / 光栅 / 主定标灯（v0.1 契约）</div>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <div class="control-card">
+                  <div class="control-title">
+                    狭缝宽度
+                    <span class="control-sub">POST /api/v1/slit</span>
+                  </div>
+                  <form id="slit-form">
+                    <div class="form-row">
+                      <label for="slit-width">宽度</label>
+                      <input type="number" step="0.1" id="slit-width" required />
+                      <select id="slit-unit" style="max-width: 120px; flex: 0 0 auto;">
+                        <option value="um">μm</option>
+                        <option value="arcsec">arcsec</option>
+                      </select>
+                    </div>
+                    <div class="hint">后端要求：<code>{"width_um": 0 &lt; x ≤ 5000}</code>。若以 arcsec 输入，将按 128.34 μm/arcsec 换算。</div>
+                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+                      <button type="submit" class="btn btn-primary btn-sm" id="slit-submit-btn">应用</button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="control-card">
+                  <div class="control-title">
+                    光栅选择
+                    <span class="control-sub">POST /api/v1/grating</span>
+                  </div>
+                  <form id="grating-form">
+                    <div class="form-row">
+                      <label for="grating-name">光栅</label>
+                      <select id="grating-name" required>
+                        <option value="G1">G1</option>
+                        <option value="G2">G2（占位）</option>
+                        <option value="G3">G3（占位）</option>
+                      </select>
+                    </div>
+                    <div class="hint">后端要求：<code>{"name": "G1"}</code>。当前 demo_flow 固定使用 G1；其它选项是否支持取决于 HAL/实现。</div>
+                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+                      <button type="submit" class="btn btn-primary btn-sm" id="grating-submit-btn">应用</button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="control-card">
+                  <div class="control-title">
+                    主定标灯
+                    <span class="control-sub">POST /api/v1/lamp</span>
+                  </div>
+                  <form id="lamp-form">
+                    <div class="form-row">
+                      <label for="lamp-on">灯状态</label>
+                      <select id="lamp-on">
+                        <option value="true">ON</option>
+                        <option value="false">OFF</option>
+                      </select>
+                    </div>
+                    <div class="hint">后端要求：<code>{"on": true|false}</code>。多光源（Ne/HgAr/ThAr/FeAr/氘卤）在本 Sprint 仅做占位。</div>
+                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+                      <button type="submit" class="btn btn-primary btn-sm" id="lamp-submit-btn">应用</button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="control-card">
+                  <div class="control-title">
+                    工具
+                    <span class="control-sub">Utilities</span>
+                  </div>
+                  <div class="form-row">
+                    <button class="btn btn-sm" type="button" id="quick-refresh-btn">刷新状态</button>
+                    <button class="btn btn-sm" type="button" id="copy-log-btn">复制日志</button>
+                    <button class="btn btn-sm" type="button" id="clear-log-btn">清空日志</button>
+                  </div>
+                  <div class="hint">复制日志用于现场排障；无需打开 DevTools。</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">仪器状态 / Instrument Status</div>
+                <div class="panel-kicker">轮询：<code>/api/v1/status/full</code>（失败则降级 <code>/api/v1/status</code>）</div>
+              </div>
+              <div class="panel-actions">
+                <span class="hint" id="status-freshness">Last OK: —</span>
+              </div>
+            </div>
+
+            <div class="status-summary">
+              <div class="status-chip">
+                <div class="status-chip-label">SLIT</div>
+                <div class="status-chip-value" id="chip-slit">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">GRATING</div>
+                <div class="status-chip-value" id="chip-grating">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">CAL LAMP</div>
+                <div class="status-chip-value" id="chip-lamp">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">TEMP</div>
+                <div class="status-chip-value" id="chip-temp">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">SOURCE</div>
+                <div class="status-chip-value" id="chip-source">—</div>
+              </div>
+              <div class="status-chip">
+                <div class="status-chip-label">SERVER UTC</div>
+                <div class="status-chip-value" id="chip-server-utc">—</div>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-title">字段解释 <span class="control-sub">Readable Table</span></div>
+              <div class="kv">
+                <div class="k">slit_width_um</div>
+                <div class="v" id="kv-slit-um">—</div>
+                <div class="d">狭缝宽度（μm），后端约束：0 &lt; x ≤ 5000</div>
+
+                <div class="k">slit_width_arcsec</div>
+                <div class="v" id="kv-slit-arcsec">—</div>
+                <div class="d">按 128.34 μm/arcsec 换算（操作层更直观）</div>
+
+                <div class="k">grating</div>
+                <div class="v" id="kv-grating">—</div>
+                <div class="d">当前光栅档位（枚举/字符串）</div>
+
+                <div class="k">lamp_on</div>
+                <div class="v" id="kv-lamp">—</div>
+                <div class="d">主定标灯开关（多光源细分在后续 API 扩展）</div>
+
+                <div class="k">temperature_c</div>
+                <div class="v" id="kv-temp">—</div>
+                <div class="d">温度（℃，当前为模拟或设备读数）</div>
+              </div>
+            </div>
+
+            <div class="status-raw">
+              <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
+            </div>
+          </section>
+
+          <section class="log-panel">
+            <div class="log-header">
+              <span>事件日志 / Event Log</span>
+              <span id="log-hint">最多保留 200 条</span>
+            </div>
+            <ul class="log-list" id="log-list"></ul>
+          </section>
+        </section>
+
+        <!-- Env -->
+        <section class="tab-panel" data-tab-panel="env">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">观测环境监测 / Environment</div>
+                <div class="panel-kicker">本 Sprint 不实现外部气象站接入；仅做占位与能力标识</div>
+              </div>
+              <div class="panel-actions">
+                <span class="pill-todo" id="env-pill">TODO：env_sensors API</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="control-card">
+                <div class="control-title">温度 <span class="control-sub">Temperature</span></div>
+                <div class="hint">可先复用 status.temperature_c 作为“仪器/机箱温度”，后续再引入湿度/风速/视宁度等。</div>
+                <div class="status-chip-value" id="env-temp">—</div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">湿度 / 风 / Seeing <span class="control-sub">Placeholder</span></div>
+                <ul class="todo-list">
+                  <li>湿度 RH（占位）</li>
+                  <li>风速/风向（占位）</li>
+                  <li>Seeing（占位）</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- Slit -->
+        <section class="tab-panel" data-tab-panel="slit">
+          <div class="layout-2col">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">狭缝控制 / Slit Control</div>
+                  <div class="panel-kicker">真实可控项：狭缝宽度（v0.1）</div>
+                </div>
+                <div class="panel-actions">
+                  <span class="pill-soft" id="slit-cap-pill">cap: slit</span>
+                </div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">宽度设置 <span class="control-sub">Width</span></div>
+                <div class="hint">建议操作层以 arcsec 记忆，但实际控制用 μm；本页提供双单位显示与输入。</div>
+                <form id="slit-form-2">
+                  <div class="form-row">
+                    <label for="slit2-width">宽度</label>
+                    <input type="number" step="0.1" id="slit2-width" required />
+                    <select id="slit2-unit" style="max-width: 120px; flex: 0 0 auto;">
+                      <option value="arcsec">arcsec</option>
+                      <option value="um">μm</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+                    <button type="submit" class="btn btn-primary btn-sm" id="slit2-submit-btn">应用</button>
+                  </div>
+                </form>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">狭缝监测相机 <span class="control-sub">Slit Monitor Camera</span></div>
+                <ul class="todo-list">
+                  <li>本 Sprint 不实现图像流接口。</li>
+                  <li>后续可增加：最新帧缩略图 + 狭缝宽度测量结果（μm / arcsec）。</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">狭缝读数 / Readback</div>
+                  <div class="panel-kicker">来自状态轮询（同 Overview）</div>
+                </div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">当前狭缝 <span class="control-sub">Current</span></div>
+                <div class="status-chip-value" id="slit-readback">—</div>
+                <div class="hint" id="slit-readback-hint">—</div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">测量结果（占位） <span class="control-sub">Measured</span></div>
+                <ul class="todo-list">
+                  <li>slit_width_measured_um（占位）</li>
+                  <li>slit_width_measured_arcsec（占位）</li>
+                </ul>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Cal -->
+        <section class="tab-panel" data-tab-panel="cal">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">定标 / Calibration</div>
+                <div class="panel-kicker">本 Sprint：仅实现“主定标灯开关”真实控制；多光源选择先占位</div>
+              </div>
+              <div class="panel-actions">
+                <span class="pill-soft" id="cal-cap-pill">cap: calib_lamps</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="control-card">
+                <div class="control-title">主定标灯 <span class="control-sub">Master Lamp</span></div>
+                <div class="hint">对应 v0.1 的 <code>lamp_on</code>；多灯种（Ne/HgAr/ThAr/FeAr/氘卤）在后续 API 扩展。</div>
+                <form id="lamp-form-2">
+                  <div class="form-row">
+                    <label for="lamp2-on">状态</label>
+                    <select id="lamp2-on">
+                      <option value="true">ON</option>
+                      <option value="false">OFF</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+                    <button type="submit" class="btn btn-primary btn-sm" id="lamp2-submit-btn">应用</button>
+                  </div>
+                </form>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">光源选择（占位） <span class="control-sub">Sources</span></div>
+                <div class="form-row">
+                  <label>光源</label>
+                  <select disabled>
+                    <option>Flat：氘卤光源（占位）</option>
+                    <option>Arc：Ne（占位）</option>
+                    <option>Arc：HgAr（占位）</option>
+                    <option>Arc：ThAr（占位）</option>
+                    <option>Arc：FeAr（占位）</option>
+                  </select>
+                </div>
+                <div class="hint">说明：后续需要扩展 API（例如 <code>/api/v1/cal/source</code>）后才能接入。</div>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">定标序列（占位） <span class="control-sub">Sequence</span></div>
+                <ul class="todo-list">
+                  <li>Flat × N + Arc × M</li>
+                  <li>执行过程写入日志，并可导出</li>
+                </ul>
+              </div>
+
+              <div class="control-card">
+                <div class="control-title">备注 <span class="control-sub">Notes</span></div>
+                <textarea placeholder="记录：光源/光栅/狭缝等（未来可写入 FITS header，由外部模块或后续实现接手）。"></textarea>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- Guiding -->
+        <section class="tab-panel" data-tab-panel="guiding">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">偏置导星 / Guider (占位)</div>
+                <div class="panel-kicker">本 Sprint 不接入导星相机/闭环；仅展示能力标识与占位</div>
+              </div>
+              <div class="panel-actions">
+                <span class="pill-soft" id="guiding-cap-pill">cap: guider</span>
+                <span class="pill-todo">TODO：guider API</span>
+              </div>
+            </div>
+            <ul class="todo-list">
+              <li>显示导星相机在线状态、曝光参数（占位）</li>
+              <li>导星星选择与 guiding loop（占位）</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Cameras -->
+        <section class="tab-panel" data-tab-panel="cameras">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">三通道相机 / B-G-R (占位)</div>
+                <div class="panel-kicker">本 Sprint 不实现相机曝光控制；仅占位与能力标识</div>
+              </div>
+              <div class="panel-actions">
+                <span class="pill-soft" id="cameras-cap-pill">cap: science_channels_bgr</span>
+                <span class="pill-todo">TODO：camera API</span>
+              </div>
+            </div>
+            <ul class="todo-list">
+              <li>蓝/绿/红通道：曝光参数、快门、触发（占位）</li>
+              <li>最近一帧缩略图 + 打开 ds9（占位）</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Quicklook -->
+        <section class="tab-panel" data-tab-panel="quicklook">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">数据快显 / Quicklook (占位)</div>
+                <div class="panel-kicker">本 Sprint 不实现 FITS 写入/QC；仅占位</div>
+              </div>
+              <div class="panel-actions">
+                <span class="pill-todo">TODO：quicklook API</span>
+              </div>
+            </div>
+            <ul class="todo-list">
+              <li>最新帧/最新谱图缩略图（占位）</li>
+              <li>下载链接/路径（占位）</li>
+              <li>快速 QC 指标（占位）</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Logs -->
+        <section class="tab-panel" data-tab-panel="logs">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">日志 / Logs</div>
+                <div class="panel-kicker">前端内存日志（200条）+ 一键复制；后续可落盘或接数据库</div>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn-sm" type="button" id="logs-copy-btn">复制日志</button>
+                <button class="btn btn-sm" type="button" id="logs-clear-btn">清空</button>
+              </div>
+            </div>
+
+            <section class="log-panel">
+              <div class="log-header">
+                <span>Event Log</span>
+                <span id="log-count">0 / 200</span>
+              </div>
+              <ul class="log-list" id="log-list-full"></ul>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // ===== Constants =====
+    const SLIT_SCALE_UM_PER_ARCSEC = 128.34;  // from P0: 128.34 um/arcsec
+
+    // Observatory longitude (east positive), deg
+    const OBS_LONGITUDE_DEG = 121.60424;
+
+    // Polling
+    const POLL_MIN_MS = 1000;
+    const POLL_MAX_MS = 10000;
+    const FETCH_TIMEOUT_MS = 5000;
+
+    // Storage
+    const LS_API_BASE = "justls_api_base_v1";
+
+    // ===== DOM =====
+    const apiBaseInput = document.getElementById("api-base-input");
+    const apiBaseSaveBtn = document.getElementById("api-base-save");
+    const apiBaseResetBtn = document.getElementById("api-base-reset");
+
+    const connectionDot = document.getElementById("connection-dot");
+    const connectionText = document.getElementById("connection-text");
+    const connMetrics = document.getElementById("conn-metrics");
+
+    const refreshStatusBtn = document.getElementById("refresh-status-btn");
+    const quickRefreshBtn = document.getElementById("quick-refresh-btn");
+
+    const pillRunmode = document.getElementById("pill-runmode");
+    const pillHal = document.getElementById("pill-hal");
+
+    const capTableBody = document.getElementById("cap-table-body");
+
+    const statusFreshness = document.getElementById("status-freshness");
+
+    const chipSlit = document.getElementById("chip-slit");
+    const chipGrating = document.getElementById("chip-grating");
+    const chipLamp = document.getElementById("chip-lamp");
+    const chipTemp = document.getElementById("chip-temp");
+    const chipSource = document.getElementById("chip-source");
+    const chipServerUtc = document.getElementById("chip-server-utc");
+
+    const kvSlitUm = document.getElementById("kv-slit-um");
+    const kvSlitArcsec = document.getElementById("kv-slit-arcsec");
+    const kvGrating = document.getElementById("kv-grating");
+    const kvLamp = document.getElementById("kv-lamp");
+    const kvTemp = document.getElementById("kv-temp");
+
+    const statusRawPre = document.getElementById("status-raw-pre");
+
+    const envTemp = document.getElementById("env-temp");
+    const envPill = document.getElementById("env-pill");
+
+    const slitReadback = document.getElementById("slit-readback");
+    const slitReadbackHint = document.getElementById("slit-readback-hint");
+
+    const slitCapPill = document.getElementById("slit-cap-pill");
+    const calCapPill = document.getElementById("cal-cap-pill");
+    const guidingCapPill = document.getElementById("guiding-cap-pill");
+    const camerasCapPill = document.getElementById("cameras-cap-pill");
+
+    const logList = document.getElementById("log-list");
+    const logListFull = document.getElementById("log-list-full");
+    const logCount = document.getElementById("log-count");
+
+    const copyLogBtn = document.getElementById("copy-log-btn");
+    const clearLogBtn = document.getElementById("clear-log-btn");
+    const logsCopyBtn = document.getElementById("logs-copy-btn");
+    const logsClearBtn = document.getElementById("logs-clear-btn");
+
+    // Forms
+    const slitForm = document.getElementById("slit-form");
+    const slitUnit = document.getElementById("slit-unit");
+    const slitSubmitBtn = document.getElementById("slit-submit-btn");
+
+    const gratingForm = document.getElementById("grating-form");
+    const gratingSubmitBtn = document.getElementById("grating-submit-btn");
+
+    const lampForm = document.getElementById("lamp-form");
+    const lampSubmitBtn = document.getElementById("lamp-submit-btn");
+
+    const slitForm2 = document.getElementById("slit-form-2");
+    const slit2SubmitBtn = document.getElementById("slit2-submit-btn");
+
+    const lampForm2 = document.getElementById("lamp-form-2");
+    const lamp2SubmitBtn = document.getElementById("lamp2-submit-btn");
+
+    // Time
+    const timeLocalSpan = document.getElementById("time-local");
+    const timeUtcSpan = document.getElementById("time-utc");
+    const timeLstSpan = document.getElementById("time-lst");
+
+    // Tabs
+    const tabs = document.querySelectorAll(".tab");
+    const tabPanels = document.querySelectorAll(".tab-panel");
+
+    // ===== State =====
+    let apiBase = "";
+    let pollTimer = null;
+    let pollDelayMs = POLL_MIN_MS;
+
+    let lastOkAt = null;
+    let lastRttMs = null;
+    let failCount = 0;
+
+    let lastCapabilities = null;
+    let lastState = null;
+    let lastMeta = null;
+
+    const LOG_MAX = 200;
+    const logBuffer = [];
+
+    // ===== Tabs behavior =====
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.getAttribute("data-tab");
+        tabs.forEach((t) => t.classList.remove("tab-active"));
+        tab.classList.add("tab-active");
+        tabPanels.forEach((panel) => {
+          const name = panel.getAttribute("data-tab-panel");
+          panel.classList.toggle("tab-panel-active", name === target);
+        });
+      });
+    });
+
+    // ===== Logging =====
+    function fmtTime(date) {
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      const ss = String(date.getSeconds()).padStart(2, "0");
+      const ms = String(date.getMilliseconds()).padStart(3, "0");
+      return `${hh}:${mm}:${ss}.${ms}`;
+    }
+
+    function pushLog(level, message) {
+      const ts = new Date();
+      const line = `[${fmtTime(ts)}] ${level.toUpperCase()} ${message}`;
+      logBuffer.push(line);
+      while (logBuffer.length > LOG_MAX) logBuffer.shift();
+
+      renderLogs();
+    }
+
+    function renderLogs() {
+      if (logCount) logCount.textContent = `${logBuffer.length} / ${LOG_MAX}`;
+
+      if (logList) {
+        logList.innerHTML = "";
+        const tail = logBuffer.slice(-12);
+        for (const line of tail) {
+          const li = document.createElement("li");
+          li.className = "log-item";
+          const t = document.createElement("span");
+          t.className = "log-time";
+          t.textContent = line.slice(1, 13);
+          const msg = document.createElement("span");
+          const isErr = line.includes(" ERROR ");
+          const isOk = line.includes(" OK ");
+          msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
+          msg.textContent = line.slice(15);
+          li.appendChild(t);
+          li.appendChild(msg);
+          logList.appendChild(li);
+        }
+      }
+
+      if (logListFull) {
+        logListFull.innerHTML = "";
+        for (const line of logBuffer) {
+          const li = document.createElement("li");
+          li.className = "log-item";
+          const t = document.createElement("span");
+          t.className = "log-time";
+          t.textContent = line.slice(1, 13);
+          const msg = document.createElement("span");
+          const isErr = line.includes(" ERROR ");
+          const isOk = line.includes(" OK ");
+          msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
+          msg.textContent = line.slice(15);
+          li.appendChild(t);
+          li.appendChild(msg);
+          logListFull.appendChild(li);
+        }
+      }
+    }
+
+    async function copyLogs() {
+      const text = logBuffer.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        pushLog("ok", "日志已复制到剪贴板。");
+      } catch {
+        pushLog("error", "复制失败（浏览器权限限制）。可手动选中文本复制。");
+      }
+    }
+
+    function clearLogs() {
+      logBuffer.length = 0;
+      renderLogs();
+      pushLog("info", "日志已清空。");
+    }
+
+    // ===== Time utils =====
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function fmtHMS(h, m, s) { return `${pad2(h)}:${pad2(m)}:${pad2(s)}`; }
+
+    function dateToJulianDate(date) {
+      const time = date.getTime();
+      const JD_UNIX_EPOCH = 2440587.5;
+      return time / 86400000 + JD_UNIX_EPOCH;
+    }
+
+    function gmstInHours(date) {
+      const JD = dateToJulianDate(date);
+      const D = JD - 2451545.0;
+      let GMST = 18.697374558 + 24.06570982441908 * D;
+      GMST = ((GMST % 24) + 24) % 24;
+      return GMST;
+    }
+
+    function lstInHours(date, longitudeDeg) {
+      let lst = gmstInHours(date) + longitudeDeg / 15.0;
+      lst = ((lst % 24) + 24) % 24;
+      return lst;
+    }
+
+    function hoursToHMSString(h) {
+      const totalSeconds = Math.floor(h * 3600 + 0.5);
+      const hh = Math.floor(totalSeconds / 3600);
+      const mm = Math.floor((totalSeconds % 3600) / 60);
+      const ss = totalSeconds % 60;
+      return fmtHMS(hh, mm, ss);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      if (timeLocalSpan) timeLocalSpan.textContent = fmtHMS(now.getHours(), now.getMinutes(), now.getSeconds());
+      if (timeUtcSpan) timeUtcSpan.textContent = fmtHMS(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, OBS_LONGITUDE_DEG));
+    }
+
+    // ===== Connection UI =====
+    function setConnection(ok) {
+      if (ok) {
+        connectionDot.classList.remove("badge-dot--error");
+        connectionDot.classList.add("badge-dot--ok");
+        connectionText.textContent = "已连接";
+      } else {
+        connectionDot.classList.remove("badge-dot--ok");
+        connectionDot.classList.add("badge-dot--error");
+        connectionText.textContent = "异常/离线";
+      }
+    }
+
+    function updateConnMetrics() {
+      const rtt = lastRttMs == null ? "—" : `${Math.round(lastRttMs)}ms`;
+      const ok = lastOkAt == null ? "—" : fmtTime(lastOkAt).slice(0, 12);
+      const poll = `${(pollDelayMs / 1000).toFixed(1)}s`;
+      connMetrics.textContent = `RTT ${rtt} · OK ${ok} · FAIL ${failCount} · ${poll}`;
+    }
+
+    // ===== Fetch helper (timeout + ok check) =====
+    async function apiRequest(path, { method = "GET", json = null } = {}) {
+      const url = `${apiBase}${path}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+      const t0 = performance.now();
+      try {
+        const resp = await fetch(url, {
+          method,
+          headers: json ? { "Content-Type": "application/json" } : undefined,
+          body: json ? JSON.stringify(json) : undefined,
+          signal: controller.signal,
+        });
+        const t1 = performance.now();
+        lastRttMs = t1 - t0;
+
+        const text = await resp.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
+        if (!resp.ok) {
+          const detail = (data && typeof data === "object" && data.detail) ? data.detail : data;
+          throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+        }
+
+        return data;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    // ===== Capabilities rendering =====
+    function capRow(name, ok, desc) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td");
+      const td2 = document.createElement("td");
+      const td3 = document.createElement("td");
+      td1.textContent = name;
+      td2.innerHTML = ok
+        ? `<span class="pill-soft pill-ok">AVAILABLE</span>`
+        : `<span class="pill-soft pill-na">N/A</span>`;
+      td3.textContent = desc;
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      return tr;
+    }
+
+    function applyCapabilities(cap) {
+      lastCapabilities = cap || null;
+
+      const flags = cap || {};
+      const map = {
+        "狭缝 (slit)": { key: "slit", affects: ["slit"], desc: "狭缝宽度设置与回读" },
+        "光栅 (grating)": { key: "grating", affects: ["overview"], desc: "光栅选择/回读" },
+        "定标灯 (calib_lamps)": { key: "calib_lamps", affects: ["cal"], desc: "主定标灯开关（多光源后续扩展）" },
+        "环境传感 (env_sensors)": { key: "env_sensors", affects: ["env"], desc: "温湿度/风/Seeing 等（本 Sprint 占位）" },
+        "狭缝监测相机": { key: "slit_monitor_camera", affects: ["slit"], desc: "狭缝监测相机（本 Sprint 占位）" },
+        "偏置导星": { key: "guider", affects: ["guiding"], desc: "导星相机/闭环（本 Sprint 占位）" },
+        "三通道相机 B/G/R": { key: "science_channels_bgr", affects: ["cameras"], desc: "曝光/快门控制（本 Sprint 占位）" },
+      };
+
+      if (capTableBody) {
+        capTableBody.innerHTML = "";
+        for (const [title, item] of Object.entries(map)) {
+          const ok = !!flags[item.key];
+          capTableBody.appendChild(capRow(title, ok, item.desc));
+        }
+      }
+
+      // Disable tabs if cap is false AND the whole tab is "future"
+      const disableByTab = {
+        env: !flags.env_sensors,
+        guiding: !flags.guider,
+        cameras: !flags.science_channels_bgr,
+      };
+
+      tabs.forEach((t) => {
+        const tab = t.getAttribute("data-tab");
+        if (tab in disableByTab) {
+          t.disabled = disableByTab[tab];
+          t.title = t.disabled ? "当前 HAL/实现未启用该模块（capabilities=false）" : "";
+        }
+      });
+
+      if (envPill) envPill.textContent = flags.env_sensors ? "env_sensors: enabled" : "env_sensors: disabled";
+      if (slitCapPill) slitCapPill.textContent = `cap: slit=${!!flags.slit}`;
+      if (calCapPill) calCapPill.textContent = `cap: calib_lamps=${!!flags.calib_lamps}`;
+      if (guidingCapPill) guidingCapPill.textContent = `cap: guider=${!!flags.guider}`;
+      if (camerasCapPill) camerasCapPill.textContent = `cap: science_channels_bgr=${!!flags.science_channels_bgr}`;
+    }
+
+    // ===== State rendering =====
+    function umToArcsec(um) {
+      if (!Number.isFinite(um)) return null;
+      return um / SLIT_SCALE_UM_PER_ARCSEC;
+    }
+
+    function fmtBool(b) { return b ? "true" : "false"; }
+
+    function renderState(state, meta) {
+      lastState = state || null;
+      lastMeta = meta || null;
+
+      if (!state) return;
+
+      const slitUm = state.slit_width_um;
+      const slitArc = umToArcsec(slitUm);
+
+      if (chipSlit) {
+        const a = slitArc == null ? "—" : `${slitArc.toFixed(2)}"`;
+        chipSlit.textContent = `${slitUm.toFixed(1)} μm  (${a})`;
+      }
+      if (chipGrating) chipGrating.textContent = state.grating ?? "—";
+      if (chipLamp) chipLamp.textContent = state.lamp_on ? "ON" : "OFF";
+      if (chipTemp) chipTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃`;
+
+      const src = meta && (meta.run_mode || meta.hal) ? `${meta.run_mode || "—"} / ${meta.hal || "—"}` : "—";
+      if (chipSource) chipSource.textContent = src;
+
+      if (chipServerUtc) chipServerUtc.textContent = (meta && meta.timestamp_utc) ? meta.timestamp_utc : "—";
+
+      if (pillRunmode) pillRunmode.textContent = `RUN_MODE ${meta && meta.run_mode ? meta.run_mode : "—"}`;
+      if (pillHal) pillHal.textContent = `HAL ${meta && meta.hal ? meta.hal : "—"}`;
+
+      if (kvSlitUm) kvSlitUm.textContent = `${slitUm.toFixed(3)} μm`;
+      if (kvSlitArcsec) kvSlitArcsec.textContent = slitArc == null ? "—" : `${slitArc.toFixed(4)} arcsec`;
+      if (kvGrating) kvGrating.textContent = String(state.grating ?? "—");
+      if (kvLamp) kvLamp.textContent = fmtBool(!!state.lamp_on);
+      if (kvTemp) kvTemp.textContent = `${(state.temperature_c ?? 0).toFixed(3)} ℃`;
+
+      if (envTemp) envTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃（暂用 instrument temperature）`;
+
+      if (slitReadback) slitReadback.textContent = `${slitUm.toFixed(1)} μm`;
+      if (slitReadbackHint) slitReadbackHint.textContent = slitArc == null ? "—" : `≈ ${slitArc.toFixed(2)} arcsec`;
+
+      if (statusRawPre) {
+        const dump = { state, meta, capabilities: lastCapabilities };
+        statusRawPre.textContent = JSON.stringify(dump, null, 2);
+      }
+    }
+
+    // ===== Polling =====
+    function stopPolling() {
+      if (pollTimer) clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+
+    function schedulePoll(nextDelayMs) {
+      stopPolling();
+      pollDelayMs = Math.max(POLL_MIN_MS, Math.min(POLL_MAX_MS, nextDelayMs));
+      updateConnMetrics();
+      pollTimer = setTimeout(pollOnce, pollDelayMs);
+    }
+
+    async function pollOnce() {
+      if (document.visibilityState !== "visible") {
+        schedulePoll(POLL_MAX_MS);
+        return;
+      }
+
+      try {
+        const data = await apiRequest("/api/v1/status/full", { method: "GET" });
+        const state = data && data.state ? data.state : data;
+        const cap = data && data.capabilities ? data.capabilities : null;
+
+        lastOkAt = new Date();
+        failCount = 0;
+        setConnection(true);
+        updateConnMetrics();
+
+        if (cap) applyCapabilities(cap);
+
+        renderState(state, {
+          hal: data.hal,
+          run_mode: data.run_mode,
+          timestamp_utc: data.timestamp_utc,
+        });
+
+        if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)}`;
+
+        pushLog("ok", `GET /api/v1/status/full (${Math.round(lastRttMs)}ms)`);
+        schedulePoll(POLL_MIN_MS);
+      } catch (e1) {
+        // fallback: /api/v1/status
+        try {
+          const st = await apiRequest("/api/v1/status", { method: "GET" });
+
+          lastOkAt = new Date();
+          failCount = 0;
+          setConnection(true);
+          updateConnMetrics();
+
+          renderState(st, { hal: "—", run_mode: "—", timestamp_utc: "—" });
+
+          if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)} (fallback)`;
+
+          pushLog("ok", `GET /api/v1/status fallback (${Math.round(lastRttMs)}ms)`);
+          schedulePoll(POLL_MIN_MS);
+        } catch (e2) {
+          failCount += 1;
+          setConnection(false);
+          updateConnMetrics();
+          pushLog("error", `poll failed: ${String(e2 && e2.message ? e2.message : e2)}`);
+          schedulePoll(Math.min(POLL_MAX_MS, pollDelayMs * 2));
+        }
+      }
+    }
+
+    async function manualRefresh() {
+      pushLog("info", "manual refresh");
+      schedulePoll(POLL_MIN_MS);
+    }
+
+    // ===== Commands =====
+    function parseNumber(id) {
+      const el = document.getElementById(id);
+      const v = Number(el.value);
+      if (!Number.isFinite(v)) throw new Error("不是有效数字");
+      return v;
+    }
+
+    function setBusy(btn, busy, label, busyLabel) {
+      btn.disabled = busy;
+      btn.textContent = busy ? busyLabel : label;
+    }
+
+    async function cmdSetSlit(widthValue, unit) {
+      let widthUm = widthValue;
+      if (unit === "arcsec") widthUm = widthValue * SLIT_SCALE_UM_PER_ARCSEC;
+
+      if (!(widthUm > 0 && widthUm <= 5000)) {
+        throw new Error(`width_um 超出范围：${widthUm.toFixed(1)}（要求 0 < x ≤ 5000）`);
+      }
+
+      pushLog("info", `UI→API POST /api/v1/slit width_um=${widthUm.toFixed(1)}`);
+      const data = await apiRequest("/api/v1/slit", { method: "POST", json: { width_um: widthUm } });
+      pushLog("ok", `API→UI slit applied (${Math.round(lastRttMs)}ms)`);
+      renderState(data, lastMeta || {});
+      schedulePoll(POLL_MIN_MS);
+    }
+
+    async function cmdSetGrating(name) {
+      pushLog("info", `UI→API POST /api/v1/grating name=${name}`);
+      const data = await apiRequest("/api/v1/grating", { method: "POST", json: { name } });
+      pushLog("ok", `API→UI grating applied (${Math.round(lastRttMs)}ms)`);
+      renderState(data, lastMeta || {});
+      schedulePoll(POLL_MIN_MS);
+    }
+
+    async function cmdSetLamp(on) {
+      pushLog("info", `UI→API POST /api/v1/lamp on=${on}`);
+      const data = await apiRequest("/api/v1/lamp", { method: "POST", json: { on } });
+      pushLog("ok", `API→UI lamp applied (${Math.round(lastRttMs)}ms)`);
+      renderState(data, lastMeta || {});
+      schedulePoll(POLL_MIN_MS);
+    }
+
+    // ===== API base handling =====
+    function normalizeBase(s) {
+      const t = (s || "").trim().replace(/\/+$/, "");
+      return t;
+    }
+
+    function setApiBase(nextBase) {
+      apiBase = normalizeBase(nextBase);
+      apiBaseInput.value = apiBase;
+      pushLog("info", `API base set to ${apiBase}`);
+      // force reconnection
+      lastOkAt = null;
+      lastRttMs = null;
+      failCount = 0;
+      setConnection(false);
+      updateConnMetrics();
+      schedulePoll(POLL_MIN_MS);
+    }
+
+    function loadApiBase() {
+      const stored = localStorage.getItem(LS_API_BASE);
+      const def = window.location.origin;
+      setApiBase(stored ? stored : def);
+    }
+
+    // ===== Wire events =====
+    refreshStatusBtn.addEventListener("click", manualRefresh);
+    if (quickRefreshBtn) quickRefreshBtn.addEventListener("click", manualRefresh);
+
+    if (copyLogBtn) copyLogBtn.addEventListener("click", copyLogs);
+    if (logsCopyBtn) logsCopyBtn.addEventListener("click", copyLogs);
+
+    if (clearLogBtn) clearLogBtn.addEventListener("click", clearLogs);
+    if (logsClearBtn) logsClearBtn.addEventListener("click", clearLogs);
+
+    apiBaseSaveBtn.addEventListener("click", () => {
+      const v = normalizeBase(apiBaseInput.value);
+      localStorage.setItem(LS_API_BASE, v);
+      setApiBase(v);
+    });
+
+    apiBaseResetBtn.addEventListener("click", () => {
+      localStorage.removeItem(LS_API_BASE);
+      setApiBase(window.location.origin);
+    });
+
+    if (slitForm) {
+      slitForm.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        setBusy(slitSubmitBtn, true, "应用", "发送中...");
+        try {
+          const width = parseNumber("slit-width");
+          const unit = slitUnit.value;
+          await cmdSetSlit(width, unit);
+        } catch (e) {
+          pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          setBusy(slitSubmitBtn, false, "应用", "发送中...");
+        }
+      });
+    }
+
+    if (slitForm2) {
+      slitForm2.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        setBusy(slit2SubmitBtn, true, "应用", "发送中...");
+        try {
+          const width = parseNumber("slit2-width");
+          const unit = document.getElementById("slit2-unit").value;
+          await cmdSetSlit(width, unit);
+        } catch (e) {
+          pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          setBusy(slit2SubmitBtn, false, "应用", "发送中...");
+        }
+      });
+    }
+
+    if (gratingForm) {
+      gratingForm.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        setBusy(gratingSubmitBtn, true, "应用", "发送中...");
+        try {
+          const name = document.getElementById("grating-name").value;
+          await cmdSetGrating(name);
+        } catch (e) {
+          pushLog("error", `grating failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          setBusy(gratingSubmitBtn, false, "应用", "发送中...");
+        }
+      });
+    }
+
+    if (lampForm) {
+      lampForm.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        setBusy(lampSubmitBtn, true, "应用", "发送中...");
+        try {
+          const on = document.getElementById("lamp-on").value === "true";
+          await cmdSetLamp(on);
+        } catch (e) {
+          pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          setBusy(lampSubmitBtn, false, "应用", "发送中...");
+        }
+      });
+    }
+
+    if (lampForm2) {
+      lampForm2.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        setBusy(lamp2SubmitBtn, true, "应用", "发送中...");
+        try {
+          const on = document.getElementById("lamp2-on").value === "true";
+          await cmdSetLamp(on);
+        } catch (e) {
+          pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
+        } finally {
+          setBusy(lamp2SubmitBtn, false, "应用", "发送中...");
+        }
+      });
+    }
+
+    // Pause polling when hidden, resume when visible
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        pushLog("info", "page visible: resume polling");
+        schedulePoll(POLL_MIN_MS);
+      } else {
+        pushLog("info", "page hidden: slow down polling");
+        schedulePoll(POLL_MAX_MS);
+      }
+    });
+
+    // ===== Init =====
+    window.addEventListener("load", () => {
+      pushLog("info", "UI loaded");
+      loadApiBase();
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    });
+  </script>
 </body>
 </html>
