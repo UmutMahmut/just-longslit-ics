@@ -4,118 +4,45 @@
   <meta charset="UTF-8" />
   <title>JUST 长缝光谱仪控制面板</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
-
-  <!--
-    Theme bootstrap (pre-CSS) to prevent FOUC:
-    - Read persisted theme from localStorage (new key: justls_theme_v1)
-    - Migrate legacy key (justls_theme) once
-    - Apply theme class to <html> before CSS is parsed
-    Ref: Web Storage API / localStorage / setItem/getItem (MDN).
-  -->
-  <script>
-    (function () {
-      const KEY = "justls_theme_v1";
-      const LEGACY = "justls_theme";
-      let mode = null;
-
-      try {
-        mode = localStorage.getItem(KEY) || localStorage.getItem(LEGACY);
-      } catch (e) {
-        mode = null;
-      }
-
-      if (mode !== "light" && mode !== "dark") {
-        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-        mode = prefersLight ? "light" : "dark";
-      }
-
-      const root = document.documentElement;
-      root.classList.toggle("theme-light", mode === "light");
-      root.classList.toggle("theme-dark", mode !== "light");
-
-      // Best-effort persist + migrate
-      try {
-        localStorage.setItem(KEY, mode);
-        if (localStorage.getItem(LEGACY) != null) localStorage.removeItem(LEGACY);
-      } catch (e) { /* ignore */ }
-    })();
-  </script>
-
   <style>
     :root {
-      /* Core tokens (dark / default) */
-      --page-bg-0: #020617;
-      --page-bg-1: #000000;
-
-      --app-grad-0: rgba(15, 23, 42, 0.90);
-      --app-grad-1: rgba(15, 23, 42, 0.98);
-
-      --header-grad-0: rgba(15, 23, 42, 0.80);
-      --header-grad-1: rgba(15, 23, 42, 0.95);
-
-      --elev-grad-0: rgba(15, 23, 42, 0.95);
-      --elev-grad-1: #020617;
-
-      --panel-grad-0: rgba(15, 23, 42, 0.96);
-      --panel-grad-1: rgba(3, 7, 18, 0.98);
-
-      --panel-bot-grad-0: rgba(15, 23, 42, 0.96);
-      --panel-bot-grad-1: #020617;
-
-      --chip-grad-0: rgba(15, 23, 42, 0.90);
-      --chip-grad-1: #020617;
-
-      --code-bg: rgba(15, 23, 42, 0.90);
-      --pill-bg: rgba(15, 23, 42, 0.90);
-      --input-bg: rgba(15, 23, 42, 0.95);
-      --table-head-bg: rgba(15, 23, 42, 0.80);
-
+      --bg: #020617;
+      --bg-panel: #020617;
+      --bg-elevated: #0b1120;
       --accent: #3b82f6;
-      --accent2: #38bdf8;
       --accent-soft: rgba(59, 130, 246, 0.15);
-
       --border: #1f2937;
-      --border-strong: rgba(75, 85, 99, 0.85);
-      --stroke: rgba(148, 163, 184, 0.45);
-
+      --border-strong: #4b5563;
       --text: #e5e7eb;
       --muted: #9ca3af;
-      --muted-2: rgba(148, 163, 184, 0.75);
-      --mono: #cbd5f5;
-
       --danger: #f97373;
       --success: #4ade80;
-
-      --shadow: 0 18px 45px rgba(15, 23, 42, 0.90);
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
       --radius-xl: 18px;
     }
-
 
     * { box-sizing: border-box; }
 
     html, body {
       margin: 0;
       padding: 0;
-      min-height: 100%;
+      height: 100%;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.35;
-      background: radial-gradient(circle at top, var(--page-bg-0) 0%, var(--page-bg-1) 55%, var(--page-bg-0) 100%);
+      background: radial-gradient(circle at top, #020617 0%, #000 55%, #020617 100%);
       color: var(--text);
     }
 
     body {
       display: flex;
-      align-items: flex-start;
+      align-items: stretch;
       justify-content: center;
       padding: 16px;
-      overflow: auto;
     }
 
     .app {
       width: 100%;
       max-width: 1300px;
-      background: linear-gradient(165deg, var(--app-grad-0), var(--app-grad-1));
+      background: linear-gradient(165deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
       border-radius: 24px;
       border: 1px solid rgba(55, 65, 81, 0.7);
       box-shadow: var(--shadow);
@@ -150,42 +77,14 @@
 
     .app-header {
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 10px;
-      padding: 10px 20px;
-      border-radius: var(--radius-xl);
-      background: radial-gradient(circle at left top, var(--header-grad-0), var(--header-grad-1));
-      border: 1px solid rgba(75,85,99,0.6);
-    }
-
-    .header-top {
-      display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at left top, rgba(15,23,42,0.8), rgba(15,23,42,0.95));
+      border: 1px solid rgba(75,85,99,0.6);
       flex-wrap: wrap;
-    }
-
-    .header-controls {
-      display: grid;
-      grid-template-columns: minmax(260px, 2.5fr) minmax(300px, 1fr) minmax(300px, 0.01fr) auto;
-      gap: 6px;
-      align-items: stretch;
-    }
-
-    @media (max-width: 1100px) {
-      .header-controls {
-        grid-template-columns: minmax(260px, 1fr) minmax(300px, 1fr);
-      }
-      .theme-box { justify-self: start; margin-left: 0; }
-    }
-
-    @media (max-width: 720px) {
-      .header-controls {
-        grid-template-columns: 1fr;
-      }
     }
 
     .title-block {
@@ -215,9 +114,9 @@
     .badge-pill {
       padding: 5px 11px;
       border-radius: 999px;
-      border: 1px solid var(--stroke);
+      border: 1px solid rgba(55, 65, 81, 0.9);
       font-size: 11px;
-      background: var(--pill-bg);
+      background: rgba(15, 23, 42, 0.9);
       color: var(--muted);
     }
 
@@ -238,7 +137,7 @@
       align-items: center;
       gap: 6px;
       border: 1px solid rgba(148, 163, 184, 0.7);
-      background-color: var(--pill-bg);
+      background-color: rgba(15, 23, 42, 0.9);
       white-space: nowrap;
     }
 
@@ -263,7 +162,7 @@
     .btn {
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, 0.5);
-      background: var(--pill-bg);
+      background: rgba(15, 23, 42, 0.9);
       color: var(--text);
       font-size: 12px;
       padding: 5px 11px;
@@ -298,37 +197,24 @@
       opacity: 0.6;
       cursor: default;
       box-shadow: none;
-      border-color: var(--border-strong);
+      border-color: rgba(75, 85, 99, 0.7);
     }
 
-    .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
     .time-block {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 8px 10px;
-      border-radius: 14px;
-      border: 1px solid var(--stroke);
-      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
+      gap: 2px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
       font-size: 11px;
-      min-width: 260px;
+      min-width: 120px;
     }
 
-    .time-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .time-col {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .time-row { display: flex; justify-content: flex-start; gap: 6px; }
+    .time-row { display: flex; justify-content: space-between; gap: 6px; }
     .time-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
 
     .baseurl-box {
@@ -337,8 +223,8 @@
       gap: 6px;
       padding: 4px 8px;
       border-radius: 12px;
-      border: 1px solid var(--stroke);
-      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
     }
 
     .baseurl-box label {
@@ -350,9 +236,9 @@
     }
 
     .baseurl-box input[type="text"] {
-      background: var(--input-bg);
+      background: rgba(15, 23, 42, 0.95);
       border-radius: 999px;
-      border: 1px solid var(--stroke);
+      border: 1px solid rgba(55, 65, 81, 0.9);
       padding: 4px 10px;
       font-size: 12px;
       color: var(--text);
@@ -372,8 +258,8 @@
       gap: 4px;
       padding: 4px;
       border-radius: 999px;
-      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
-      border: 1px solid var(--stroke);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      border: 1px solid rgba(55,65,81,0.9);
       overflow-x: auto;
     }
 
@@ -396,7 +282,7 @@
     .tab:hover {
       color: var(--text);
       border-color: rgba(75,85,99,0.9);
-      background: var(--pill-bg);
+      background: rgba(15,23,42,0.9);
     }
 
     .tab-active {
@@ -417,8 +303,8 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 999px;
-      background: var(--pill-bg);
-      border: 1px solid var(--stroke);
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
       color: var(--muted);
     }
 
@@ -427,7 +313,7 @@
     .tab-panel-active { display: block; }
 
     .panel {
-      background: radial-gradient(circle at top, var(--panel-grad-0), var(--panel-grad-1));
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(3,7,18,0.98));
       border-radius: var(--radius-xl);
       border: 1px solid var(--border);
       padding: 12px 12px 10px;
@@ -488,8 +374,8 @@
 
     .control-card {
       border-radius: 14px;
-      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
-      border: 1px solid var(--stroke);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      border: 1px solid rgba(31, 41, 55, 0.9);
       padding: 9px 10px 9px;
       display: flex;
       flex-direction: column;
@@ -523,9 +409,9 @@
     }
 
     input[type="number"], input[type="text"], select, textarea {
-      background: var(--input-bg);
+      background: rgba(15, 23, 42, 0.95);
       border-radius: 999px;
-      border: 1px solid var(--stroke);
+      border: 1px solid rgba(55, 65, 81, 0.9);
       padding: 5px 10px;
       font-size: 12px;
       color: var(--text);
@@ -560,8 +446,8 @@
     .status-chip {
       padding: 6px 8px;
       border-radius: 13px;
-      background: radial-gradient(circle at top left, var(--chip-grad-0), var(--chip-grad-1));
-      border: 1px solid var(--stroke);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), #020617);
+      border: 1px solid rgba(55, 65, 81, 0.9);
       font-size: 12px;
       display: flex;
       flex-direction: column;
@@ -580,12 +466,12 @@
     .status-raw {
       margin-top: 6px;
       border-radius: 14px;
-      background: var(--code-bg);
-      border: 1px solid var(--stroke);
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(31,41,55,0.9);
       padding: 8px 10px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 11px;
-      color: var(--mono);
+      color: #cbd5f5;
       max-height: 240px;
       overflow: auto;
     }
@@ -604,7 +490,7 @@
       white-space: nowrap;
     }
 
-    .table thead { background: var(--table-head-bg); }
+    .table thead { background: rgba(15,23,42,0.8); }
     .table th { font-weight: 500; color: var(--muted); }
 
     .pill-soft {
@@ -613,8 +499,8 @@
       padding: 2px 6px;
       border-radius: 999px;
       font-size: 10px;
-      background: var(--pill-bg);
-      border: 1px solid var(--stroke);
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(55,65,81,0.9);
       color: var(--muted);
     }
 
@@ -624,7 +510,7 @@
     .log-panel {
       border-radius: var(--radius-xl);
       border: 1px solid rgba(31, 41, 55, 0.95);
-      background: radial-gradient(circle at bottom, var(--panel-bot-grad-0), var(--panel-bot-grad-1));
+      background: radial-gradient(circle at bottom, rgba(15,23,42,0.96), #020617);
       padding: 9px 12px 8px;
       display: flex;
       flex-direction: column;
@@ -647,7 +533,7 @@
       list-style: none;
       margin: 0;
       padding: 0;
-      overflow: auto;
+      overflow-y: auto;
       max-height: 160px;
       font-size: 11px;
     }
@@ -685,9 +571,9 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 999px;
-      border: 1px solid var(--stroke);
+      border: 1px solid rgba(148,163,184,0.5);
       color: var(--muted);
-      background: var(--pill-bg);
+      background: rgba(15,23,42,0.9);
     }
 
     .kv {
@@ -695,266 +581,45 @@
       grid-template-columns: 180px 1fr 1.5fr;
       gap: 6px;
       font-size: 11px;
-      border-top: 1px solid var(--stroke);
+      border-top: 1px solid rgba(31,41,55,0.7);
       padding-top: 6px;
     }
 
     .kv .k { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; padding-top: 2px; }
-    .kv .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: var(--mono); }
+    .kv .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: #cbd5f5; }
     .kv .d { color: var(--muted); }
 
     @media (max-width: 720px) {
       .kv { grid-template-columns: 140px 1fr; }
       .kv .d { grid-column: 1 / -1; padding-left: 0; }
     }
-
-    /* ===== Theme support =====
-       Use <html>.theme-* (not body) to ensure theme is applied before body renders (FOUC fix)
-    */
-    html.theme-dark { color-scheme: dark; }
-    html.theme-light {
-      color-scheme: light;
-
-      --page-bg-0: #eef4ff;
-      --page-bg-1: #ffffff;
-
-      --app-grad-0: rgba(255, 255, 255, 0.86);
-      --app-grad-1: rgba(255, 255, 255, 0.96);
-
-      --header-grad-0: rgba(255, 255, 255, 0.86);
-      --header-grad-1: rgba(255, 255, 255, 0.96);
-
-      --elev-grad-0: rgba(255, 255, 255, 0.92);
-      --elev-grad-1: rgba(248, 250, 252, 0.96);
-
-      --panel-grad-0: rgba(255, 255, 255, 0.90);
-      --panel-grad-1: rgba(255, 255, 255, 0.98);
-
-      --panel-bot-grad-0: rgba(255, 255, 255, 0.92);
-      --panel-bot-grad-1: rgba(248, 250, 252, 0.98);
-
-      --chip-grad-0: rgba(255, 255, 255, 0.92);
-      --chip-grad-1: rgba(248, 250, 252, 0.98);
-
-      --code-bg: rgba(15, 23, 42, 0.04);
-      --pill-bg: rgba(15, 23, 42, 0.04);
-      --input-bg: rgba(255, 255, 255, 0.96);
-      --table-head-bg: rgba(15, 23, 42, 0.04);
-
-      --border: rgba(15, 23, 42, 0.14);
-      --border-strong: rgba(15, 23, 42, 0.26);
-      --stroke: rgba(15, 23, 42, 0.20);
-
-      --text: #0f172a;
-      --muted: rgba(15, 23, 42, 0.68);
-      --muted-2: rgba(15, 23, 42, 0.55);
-      --mono: rgba(15, 23, 42, 0.88);
-
-      --shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
-    }
-
-    /* ===== SITE layout (compact, vertical, operator-friendly) ===== */
-    .baseurl-box.site-box {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 10px;
-      align-items: start;
-    }
-
-    .site-title{
-      display: flex;
-      align-items: center;
-      height: 100%;
-      justify-content: flex-start;
-    }
-
-    .site-fields {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .site-field {
-      display: grid;
-      grid-template-columns: 74px minmax(0, 1fr);
-      align-items: center;
-      gap: 8px;
-    }
-
-    .site-field-label {
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      white-space: nowrap;
-      opacity: 0.95;
-    }
-
-    .baseurl-box.site-box input[type=number] {
-      width: 120px;
-      max-width: 100%;
-    }
-
-    .site-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: stretch;
-    }
-
-    @media (max-width: 1100px) {
-      .baseurl-box.site-box {
-        grid-template-columns: auto 1fr;
-      }
-      .site-actions {
-        grid-column: 1 / -1;
-        flex-direction: row;
-        justify-content: flex-end;
-      }
-    }
-
-    .theme-box { display: flex; align-items: center; gap: 10px; justify-self: end; margin-left: 0; }
-    .theme-text { color: var(--muted); font-size: 12px; min-width: 28px; }
-
-    /* Toggle switch */
-    .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; inset: 0; background: rgba(148,163,184,0.35); transition: .2s; border-radius: 999px; border: 1px solid var(--stroke); }
-    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; top: 2.5px; background: white; transition: .2s; border-radius: 999px; }
-    input:checked + .slider { background: rgba(59,130,246,0.45); }
-    input:checked + .slider:before { transform: translateX(19px); }
-
-    /* Slit preset row */
-    .preset-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-    .preset-row .btn { padding: 4px 10px; }
-
-    /* Raw details */
-    .raw-details { margin-top: 12px; border-top: 1px solid var(--stroke); padding-top: 8px; }
-    .raw-details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
-    .raw-details[open] summary { color: var(--text); }
-
-    /* ===== Operator View ===== */
-    .ops-list {
-      margin: 0;
-      padding-left: 18px;
-      display: grid;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--text);
-    }
-    .ops-list li { margin: 0; }
-    .ops-list code { font-size: 11px; opacity: 0.9; }
-
-    /* ===== Focus visibility (keyboard) ===== */
-    :focus-visible {
-      outline: 2px solid rgba(59, 130, 246, 0.95);
-      outline-offset: 2px;
-    }
-    .btn:focus-visible,
-    .tab:focus-visible,
-    summary:focus-visible,
-    input[type="text"]:focus-visible,
-    input[type="number"]:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible {
-      outline: 2px solid rgba(59, 130, 246, 0.95);
-      outline-offset: 2px;
-    }
-    .switch input:focus-visible + .slider {
-      outline: 2px solid rgba(59, 130, 246, 0.95);
-      outline-offset: 3px;
-    }
-
-    /* ===== Target size / hit area ===== */
-    .btn { min-height: 28px; }
-    .btn-sm { min-height: 26px; }
-    .tab { min-height: 30px; }
-
-    /* ===== Reduced motion ===== */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation: none !important;
-        transition: none !important;
-        scroll-behavior: auto !important;
-      }
-    }
-</style>
+  </style>
 </head>
 <body>
   <div class="app">
     <div class="app-inner">
       <header class="app-header">
-        <div class="header-top">
-          <div class="title-block">
-            <div class="title-main">
-              JUST 长缝光谱仪控制
-              <span class="badge-pill">Local Console · v0.2</span>
-            </div>
-            <div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
+        <div class="title-block">
+          <div class="title-main">
+            JUST 长缝光谱仪控制
+            <span class="badge-pill">Local Console · v0.2</span>
           </div>
-
-          <div class="status-badges">
-            <div class="badge" id="connection-badge" title="连接状态（基于 /api/v1/status/full 轮询）">
-              <span class="badge-dot" id="connection-dot"></span>
-              <span id="connection-text">未连接</span>
-            </div>
-
-            <div class="badge" title="RTT / 最近成功 / 连续失败 / 当前轮询间隔">
-              <span id="conn-metrics">RTT — · OK — · FAIL 0 · 1.0s</span>
-            </div>
-
-            <button class="btn btn-sm" id="refresh-status-btn">刷新</button>
-          </div>
+          <div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
         </div>
 
-        <div class="header-controls">
+        <div class="status-badges">
           <div class="time-block">
-            <div class="time-grid" role="group" aria-label="Time & sky">
-              <div class="time-col">
-                <div class="time-row">
-                  <span class="time-label">Local</span>
-                  <span id="time-local">--:--:--</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">UTC</span>
-                  <span id="time-utc">--:--:--</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">LST</span>
-                  <span id="time-lst">--:--:--</span>
-                </div>
-              </div>
-
-              <div class="time-col">
-                <div class="time-row">
-                  <span class="time-label">EPOCH</span>
-                  <span id="time-epoch">----</.--</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">JD</span>
-                  <span id="time-jd">------.--</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">MJD</span>
-                  <span id="time-mjd">------.--</span>
-                </div>
-              </div>
-
-              <div class="time-col">
-                <div class="time-row">
-                  <span class="time-label">DATE</span>
-                  <span id="time-date">YYYY-MM-DD</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">DAWN</span>
-                  <span id="time-dawn">--:--</span>
-                </div>
-                <div class="time-row">
-                  <span class="time-label">DUSK</span>
-                  <span id="time-dusk">--:--</span>
-                </div>
-              </div>
+            <div class="time-row">
+              <span class="time-label">Local</span>
+              <span id="time-local">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">UTC</span>
+              <span id="time-utc">--:--:--</span>
+            </div>
+            <div class="time-row">
+              <span class="time-label">LST</span>
+              <span id="time-lst">--:--:--</span>
             </div>
           </div>
 
@@ -965,36 +630,16 @@
             <button class="btn btn-sm" id="api-base-reset">重置</button>
           </div>
 
-          <div class="baseurl-box site-box">
-            <label class="site-title">SITE</label>
-            <div class="site-fields" role="group" aria-label="Observatory site">
-              <div class="site-field">
-                <span class="site-field-label">LAT °N</span>
-                <input id="site-lat" type="number" step="0.0001" title="Latitude (deg, N+)" aria-label="Latitude (deg, N+)" />
-              </div>
-              <div class="site-field">
-                <span class="site-field-label">LON °E</span>
-                <input id="site-lon" type="number" step="0.0001" title="Longitude (deg, E+)" aria-label="Longitude (deg, E+)" />
-              </div>
-              <div class="site-field">
-                <span class="site-field-label">ALT m</span>
-                <input id="site-alt" type="number" step="1" title="Altitude (m)" aria-label="Altitude (m)" />
-              </div>
-            </div>
-            <div class="site-actions">
-              <button class="btn btn-sm" id="site-save">保存</button>
-              <button class="btn btn-sm" id="site-reset">默认</button>
-            </div>
+          <div class="badge" id="connection-badge" title="连接状态（基于 /api/v1/status/full 轮询）">
+            <span class="badge-dot" id="connection-dot"></span>
+            <span id="connection-text">未连接</span>
           </div>
 
-          <div class="theme-box" title="夜间/白天主题切换（本地保存）">
-            <span class="theme-label">主题</span>
-            <label class="switch">
-              <input id="theme-toggle" type="checkbox" />
-              <span class="slider"></span>
-            </label>
-            <span id="theme-text" class="theme-text">夜间</span>
+          <div class="badge" title="RTT / 最近成功 / 连续失败 / 当前轮询间隔">
+            <span id="conn-metrics">RTT — · OK — · FAIL 0 · 1.0s</span>
           </div>
+
+          <button class="btn btn-sm" id="refresh-status-btn">刷新</button>
         </div>
       </header>
 
@@ -1062,15 +707,7 @@
                         <option value="arcsec">arcsec</option>
                       </select>
                     </div>
-
-                    <div class="preset-row" aria-label="狭缝预设（arcsec）">
-                      <button class="btn btn-sm" type="button" data-slit-preset="0.6">0.6"</button>
-                      <button class="btn btn-sm" type="button" data-slit-preset="0.8">0.8"</button>
-                      <button class="btn btn-sm" type="button" data-slit-preset="1.0">1.0"</button>
-                      <button class="btn btn-sm" type="button" data-slit-preset="1.2">1.2"</button>
-                    </div>
                     <div class="hint">后端要求：<code>{"width_um": 0 &lt; x ≤ 5000}</code>。若以 arcsec 输入，将按 128.34 μm/arcsec 换算。</div>
-
                     <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
                       <button type="submit" class="btn btn-primary btn-sm" id="slit-submit-btn">应用</button>
                     </div>
@@ -1172,12 +809,6 @@
               </div>
             </div>
 
-            <div class="control-card" id="ops-card">
-              <div class="control-title">操作员状态说明 <span class="control-sub">Operator View</span></div>
-              <ul class="ops-list" id="ops-list" aria-live="polite"></ul>
-              <div class="hint" id="ops-hint">提示：这里是“人话”摘要，便于快速判断能不能操作；详细诊断请看 Raw / Event Log。</div>
-            </div>
-
             <div class="control-card">
               <div class="control-title">字段解释 <span class="control-sub">Readable Table</span></div>
               <div class="kv">
@@ -1203,12 +834,9 @@
               </div>
             </div>
 
-            <details class="raw-details" id="raw-details">
-              <summary>原始状态 / Raw (Debug only)</summary>
-              <div class="status-raw">
-                <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
-              </div>
-            </details>
+            <div class="status-raw">
+              <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
+            </div>
           </section>
 
           <section class="log-panel">
@@ -1471,13 +1099,8 @@
     // ===== Constants =====
     const SLIT_SCALE_UM_PER_ARCSEC = 128.34;  // from P0: 128.34 um/arcsec
 
-    // Runtime site settings (editable in UI)
-    let site = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
-
-    // Observatory longitude (east positive), deg (legacy default; unused once SITE is enabled)
-    // const OBS_LONGITUDE_DEG = 121.60424;
-
-    const SITE_DEFAULT = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
+    // Observatory longitude (east positive), deg
+    const OBS_LONGITUDE_DEG = 121.60424;
 
     // Polling
     const POLL_MIN_MS = 1000;
@@ -1486,34 +1109,6 @@
 
     // Storage
     const LS_API_BASE = "justls_api_base_v1";
-    const LS_SITE = "justls_site_v1";
-    const LS_THEME = "justls_theme_v1";
-    const LS_THEME_LEGACY = "justls_theme";
-
-    // ===== Time baseline (UTC first) =====
-    // If backend provides meta.timestamp_utc (ISO8601), we compute:
-    //   timeOffsetMs = serverUtcMs - Date.now()
-    // All displayed time fields use nowRef = new Date(Date.now() + timeOffsetMs)
-    let timeOffsetMs = 0;
-    let lastServerTimeSyncAt = null;
-
-    function getNowRef() {
-      return new Date(Date.now() + timeOffsetMs);
-    }
-
-    function syncTimeFromMeta(meta) {
-      const ts = meta && meta.timestamp_utc ? String(meta.timestamp_utc) : "";
-      if (!ts) return false;
-
-      const ms = Date.parse(ts);
-      if (!Number.isFinite(ms)) return false;
-
-      timeOffsetMs = ms - Date.now();
-      lastServerTimeSyncAt = new Date();
-      // Force immediate refresh of all time-derived fields
-      updateClock(true);
-      return true;
-    }
 
     // ===== DOM =====
     const apiBaseInput = document.getElementById("api-base-input");
@@ -1590,90 +1185,6 @@
     const timeLocalSpan = document.getElementById("time-local");
     const timeUtcSpan = document.getElementById("time-utc");
     const timeLstSpan = document.getElementById("time-lst");
-    const timeDateSpan = document.getElementById("time-date");
-    const timeEpochSpan = document.getElementById("time-epoch");
-    const timeJdSpan = document.getElementById("time-jd");
-    const timeMjdSpan = document.getElementById("time-mjd");
-    const timeDawnSpan = document.getElementById("time-dawn");
-    const timeDuskSpan = document.getElementById("time-dusk");
-
-    const siteLatInput = document.getElementById("site-lat");
-    const siteLonInput = document.getElementById("site-lon");
-    const siteAltInput = document.getElementById("site-alt");
-    const siteSaveBtn = document.getElementById("site-save");
-    const siteResetBtn = document.getElementById("site-reset");
-
-    const themeToggle = document.getElementById("theme-toggle");
-    const themeText = document.getElementById("theme-text");
-
-    const opsList = document.getElementById("ops-list");
-    const opsHint = document.getElementById("ops-hint");
-
-
-    // ===== Operator View (safe, non-blocking) =====
-    function renderOperatorStatus(state, _meta) { // _meta reserved for future use (currently unused)
-      if (!opsList || !opsHint) return;
-
-      const items = [];
-      const api = (apiBase || "").trim() || "(not set)";
-
-      if (connectionOk) {
-        const rtt = (typeof lastRttMs === 'number') ? `${Math.round(lastRttMs)}ms` : "—";
-        items.push(`连接：已连接（RTT ${rtt}）`);
-      } else {
-        items.push(`连接：离线/异常（检查后端与 API 地址）`);
-      }
-      items.push(`API：${api}`);
-
-      if (lastCapabilities) {
-        const enabled = Object.entries(lastCapabilities)
-          .filter(([k, v]) => !!v)
-          .map(([k]) => k)
-          .sort();
-        items.push(`capabilities：${enabled.length ? enabled.join(", ") : "(none)"}`);
-      } else {
-        items.push('capabilities：未就绪（等待 /api/v1/status/full）');
-      }
-
-      if (state && typeof state === 'object') {
-        const slit = (state.slit_width_um != null) ? `${state.slit_width_um} μm` : '—';
-        const grat = (state.grating != null) ? `${state.grating}` : '—';
-        const lamp = (state.lamp_on != null) ? (state.lamp_on ? 'ON' : 'OFF') : '—';
-        items.push(`当前：slit ${slit} · grating ${grat} · lamp ${lamp}`);
-      }
-
-      const canSlit = !!(lastCapabilities && lastCapabilities.slit);
-      const canGrat = !!(lastCapabilities && lastCapabilities.grating);
-      const canLamp = !!(lastCapabilities && (lastCapabilities.calib_lamps || lastCapabilities.lamp));
-
-      if (!connectionOk) {
-        opsHint.textContent = '提示：确认 uvicorn 已启动；检查浏览器地址栏与 API 地址是否一致；必要时查看 Event Log。';
-      } else if (!lastCapabilities) {
-        opsHint.textContent = '提示：后端已通；等待 capabilities 刷新完成后再进行操作。';
-      } else if (canSlit || canGrat || canLamp) {
-        const steps = [];
-        if (canSlit) steps.push('① 设狭缝');
-        if (canGrat) steps.push('② 选光栅');
-        if (canLamp) steps.push('③ 开/关灯');
-        opsHint.textContent = '建议流程：' + steps.join(' → ') + '（异常时复制 Event Log 反馈）。';
-      } else {
-        opsHint.textContent = '提示：capabilities 均为 N/A，本页面处于占位/演示模式。';
-      }
-
-      opsList.innerHTML = '';
-      for (const t of items) {
-        const li = document.createElement('li');
-        li.className = 'ops-item';
-        li.textContent = t;
-        opsList.appendChild(li);
-      }
-    }
-
-    function renderOperatorView() {
-      try {
-        renderOperatorStatus(lastState, lastMeta);
-      } catch (e) { /* do not crash UI */ }
-    }
 
     // Tabs
     const tabs = document.querySelectorAll(".tab");
@@ -1683,8 +1194,6 @@
     let apiBase = "";
     let pollTimer = null;
     let pollDelayMs = POLL_MIN_MS;
-
-    let connectionOk = false;
 
     let lastOkAt = null;
     let lastRttMs = null;
@@ -1819,204 +1328,15 @@
       return fmtHMS(hh, mm, ss);
     }
 
-    // ===== Theme (Night/Day) =====
-    function applyTheme(mode) {
-      const m = (mode === 'light') ? 'light' : 'dark';
-      const root = document.documentElement;
-
-      root.classList.toggle('theme-light', m === 'light');
-      root.classList.toggle('theme-dark', m !== 'light');
-
-      if (themeToggle) themeToggle.checked = (m === 'light');
-      if (themeText) themeText.textContent = (m === 'light') ? '白天' : '夜间';
-
-      // Persist with unified key; migrate legacy best-effort
-      try {
-        localStorage.setItem(LS_THEME, m);
-        if (localStorage.getItem(LS_THEME_LEGACY) != null) localStorage.removeItem(LS_THEME_LEGACY);
-      } catch (e) { /* ignore */ }
-    }
-
-    function loadTheme() {
-      let mode = null;
-      try { mode = localStorage.getItem(LS_THEME) || localStorage.getItem(LS_THEME_LEGACY); } catch {}
-
-      if (mode !== "light" && mode !== "dark") {
-        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-        mode = prefersLight ? "light" : "dark";
-      }
-
-      applyTheme(mode);
-    }
-
-    // ===== Site (lat/lon/alt) =====
-    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
-
-    function readNumberOrDefault(inputEl, defaultValue) {
-      if (!inputEl) return defaultValue;
-      const s = String(inputEl.value ?? "").trim();
-      if (s === "") return defaultValue;
-      const v = Number(s);
-      return Number.isFinite(v) ? v : defaultValue;
-    }
-
-    function renderSiteInputs() {
-      if (siteLatInput) siteLatInput.value = String(site.lat_deg);
-      if (siteLonInput) siteLonInput.value = String(site.lon_deg);
-      if (siteAltInput) siteAltInput.value = String(site.alt_m);
-    }
-
-    function loadSite() {
-      let s = null;
-      try { s = localStorage.getItem(LS_SITE); } catch {}
-      if (s) {
-        try {
-          const obj = JSON.parse(s);
-          const lat = Number(obj.lat_deg);
-          const lon = Number(obj.lon_deg);
-          const alt = Number(obj.alt_m);
-          if (Number.isFinite(lat)) site.lat_deg = clamp(lat, -90, 90);
-          if (Number.isFinite(lon)) site.lon_deg = clamp(lon, -180, 180);
-          if (Number.isFinite(alt)) site.alt_m = clamp(alt, -500, 10000);
-        } catch {}
-      }
-      renderSiteInputs();
-    }
-
-    function saveSiteFromInputs() {
-      const lat = clamp(readNumberOrDefault(siteLatInput, SITE_DEFAULT.lat_deg), -90, 90);
-      const lon = clamp(readNumberOrDefault(siteLonInput, SITE_DEFAULT.lon_deg), -180, 180);
-      const alt = clamp(readNumberOrDefault(siteAltInput, SITE_DEFAULT.alt_m), -500, 10000);
-
-      site.lat_deg = lat;
-      site.lon_deg = lon;
-      site.alt_m = alt;
-
-      renderSiteInputs();
-      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
-
-      // Time-dependent fields (LST / dawn / dusk) use site.lon/lat; refresh immediately
-      updateClock(true);
-
-      pushLog("ok", `SITE saved: lat=${lat.toFixed(4)} lon=${lon.toFixed(4)} alt=${Math.round(alt)}m`);
-    }
-
-    function resetSiteDefault() {
-      site = { ...SITE_DEFAULT };
-      renderSiteInputs();
-      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
-      updateClock(true);
-    }
-
-    // ===== Time extras (Epoch/JD/MJD) =====
-    function isLeapYear(y){ return (y%4===0 && y%100!==0) || (y%400===0); }
-    function dayOfYearLocal(d){
-      const start = new Date(d.getFullYear(),0,1);
-      return Math.floor((d - start)/86400000) + 1;
-    }
-    function decimalYearLocal(d){
-      const y = d.getFullYear();
-      const days = isLeapYear(y) ? 366 : 365;
-      const doy = dayOfYearLocal(d);
-      const fracDay = (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds())/86400;
-      return y + ((doy-1) + fracDay)/days;
-    }
-    function julianDateFromMs(ms){
-      // Unix epoch corresponds to JD 2440587.5
-      return ms/86400000 + 2440587.5;
-    }
-
-    // ===== Astronomical twilight (NOAA-style sunrise equation; zenith 108°) =====
-    function deg2rad(x){ return x*Math.PI/180; }
-    function rad2deg(x){ return x*180/Math.PI; }
-    function normalizeDeg(x){ x = x % 360; return x < 0 ? x + 360 : x; }
-    function normalizeHours(x){ x = x % 24; return x < 0 ? x + 24 : x; }
-
-    function sunriseEquationUtcMinutes(dateLocalMidnight, latDeg, lonDeg, zenithDeg, isSunrise){
-      const N = dayOfYearLocal(dateLocalMidnight);
-      const lngHour = lonDeg / 15.0;
-
-      const t = N + ((isSunrise ? 6 : 18) - lngHour) / 24.0;
-      const M = (0.9856 * t) - 3.289;
-      let L = M + (1.916 * Math.sin(deg2rad(M))) + (0.020 * Math.sin(deg2rad(2*M))) + 282.634;
-      L = normalizeDeg(L);
-
-      let RA = rad2deg(Math.atan(0.91764 * Math.tan(deg2rad(L))));
-      RA = normalizeDeg(RA);
-      const Lquadrant  = Math.floor(L/90) * 90;
-      const RAquadrant = Math.floor(RA/90) * 90;
-      RA = RA + (Lquadrant - RAquadrant);
-      RA = RA / 15.0;
-
-      const sinDec = 0.39782 * Math.sin(deg2rad(L));
-      const cosDec = Math.cos(Math.asin(sinDec));
-
-      const cosH = (Math.cos(deg2rad(zenithDeg)) - (sinDec * Math.sin(deg2rad(latDeg)))) / (cosDec * Math.cos(deg2rad(latDeg)));
-      if (cosH > 1) return NaN;
-      if (cosH < -1) return NaN;
-
-      let H = isSunrise ? (360 - rad2deg(Math.acos(cosH))) : rad2deg(Math.acos(cosH));
-      H = H / 15.0;
-
-      const T = H + RA - (0.06571 * t) - 6.622;
-      let UT = T - lngHour; // hours
-      UT = normalizeHours(UT);
-
-      return UT * 60.0;
-    }
-
-    function minutesUtcToLocalHM(dateLocalMidnight, utcMinutes){
-      if (!Number.isFinite(utcMinutes)) return "N/A";
-      const baseUtc = new Date(Date.UTC(dateLocalMidnight.getFullYear(), dateLocalMidnight.getMonth(), dateLocalMidnight.getDate(), 0, 0, 0));
-      const dt = new Date(baseUtc.getTime() + utcMinutes*60000);
-      return fmtHMS(dt.getHours(), dt.getMinutes(), 0).slice(0,5);
-    }
-
-    let _lastTwilightKey = null;
-    function updateTwilight(nowRef, force=false){
-      const now = nowRef || getNowRef();
-      const key = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-      if (!force && _lastTwilightKey === key) return;
-      _lastTwilightKey = key;
-
-      const lat = Number(site.lat_deg);
-      const lon = Number(site.lon_deg);
-      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
-
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        if (timeDawnSpan) timeDawnSpan.textContent = "N/A";
-        if (timeDuskSpan) timeDuskSpan.textContent = "N/A";
-        return;
-      }
-
-      const zenithAstro = 108.0; // 90 + 18
-      const dawnMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, true);
-      const duskMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, false);
-
-      if (timeDawnSpan) timeDawnSpan.textContent = minutesUtcToLocalHM(localMidnight, dawnMin);
-      if (timeDuskSpan) timeDuskSpan.textContent = minutesUtcToLocalHM(localMidnight, duskMin);
-    }
-
-    function updateClock(force=false) {
-      const now = getNowRef();
-
+    function updateClock() {
+      const now = new Date();
       if (timeLocalSpan) timeLocalSpan.textContent = fmtHMS(now.getHours(), now.getMinutes(), now.getSeconds());
       if (timeUtcSpan) timeUtcSpan.textContent = fmtHMS(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, site.lon_deg));
-
-      if (timeDateSpan) timeDateSpan.textContent = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-      if (timeEpochSpan) timeEpochSpan.textContent = decimalYearLocal(now).toFixed(5);
-
-      const jd = julianDateFromMs(now.getTime());
-      if (timeJdSpan) timeJdSpan.textContent = jd.toFixed(5);
-      if (timeMjdSpan) timeMjdSpan.textContent = (jd - 2400000.5).toFixed(5);
-
-      updateTwilight(now, force);
+      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, OBS_LONGITUDE_DEG));
     }
 
     // ===== Connection UI =====
     function setConnection(ok) {
-      connectionOk = !!ok;
       if (ok) {
         connectionDot.classList.remove("badge-dot--error");
         connectionDot.classList.add("badge-dot--ok");
@@ -2026,7 +1346,6 @@
         connectionDot.classList.add("badge-dot--error");
         connectionText.textContent = "异常/离线";
       }
-      renderOperatorView();
     }
 
     function updateConnMetrics() {
@@ -2038,13 +1357,7 @@
 
     // ===== Fetch helper (timeout + ok check) =====
     async function apiRequest(path, { method = "GET", json = null } = {}) {
-      let url = "";
-      try {
-        url = new URL(path, apiBase).toString();
-      } catch {
-        url = `${apiBase}${path}`;
-      }
-
+      const url = `${apiBase}${path}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -2096,13 +1409,13 @@
 
       const flags = cap || {};
       const map = {
-        "狭缝 (slit)": { key: "slit", desc: "狭缝宽度设置与回读" },
-        "光栅 (grating)": { key: "grating", desc: "光栅选择/回读" },
-        "定标灯 (calib_lamps)": { key: "calib_lamps", desc: "主定标灯开关（多光源后续扩展）" },
-        "环境传感 (env_sensors)": { key: "env_sensors", desc: "温湿度/风/Seeing 等（本 Sprint 占位）" },
-        "狭缝监测相机": { key: "slit_monitor_camera", desc: "狭缝监测相机（本 Sprint 占位）" },
-        "偏置导星": { key: "guider", desc: "导星相机/闭环（本 Sprint 占位）" },
-        "三通道相机 B/G/R": { key: "science_channels_bgr", desc: "曝光/快门控制（本 Sprint 占位）" },
+        "狭缝 (slit)": { key: "slit", affects: ["slit"], desc: "狭缝宽度设置与回读" },
+        "光栅 (grating)": { key: "grating", affects: ["overview"], desc: "光栅选择/回读" },
+        "定标灯 (calib_lamps)": { key: "calib_lamps", affects: ["cal"], desc: "主定标灯开关（多光源后续扩展）" },
+        "环境传感 (env_sensors)": { key: "env_sensors", affects: ["env"], desc: "温湿度/风/Seeing 等（本 Sprint 占位）" },
+        "狭缝监测相机": { key: "slit_monitor_camera", affects: ["slit"], desc: "狭缝监测相机（本 Sprint 占位）" },
+        "偏置导星": { key: "guider", affects: ["guiding"], desc: "导星相机/闭环（本 Sprint 占位）" },
+        "三通道相机 B/G/R": { key: "science_channels_bgr", affects: ["cameras"], desc: "曝光/快门控制（本 Sprint 占位）" },
       };
 
       if (capTableBody) {
@@ -2113,6 +1426,7 @@
         }
       }
 
+      // Disable tabs if cap is false AND the whole tab is "future"
       const disableByTab = {
         env: !flags.env_sensors,
         guiding: !flags.guider,
@@ -2132,96 +1446,56 @@
       if (calCapPill) calCapPill.textContent = `cap: calib_lamps=${!!flags.calib_lamps}`;
       if (guidingCapPill) guidingCapPill.textContent = `cap: guider=${!!flags.guider}`;
       if (camerasCapPill) camerasCapPill.textContent = `cap: science_channels_bgr=${!!flags.science_channels_bgr}`;
-      renderOperatorView();
     }
 
     // ===== State rendering =====
-    // Unused helpers (kept for future; safe to delete later if you want)
-    // function umToArcsec(um) { if (!Number.isFinite(um)) return null; return um / SLIT_SCALE_UM_PER_ARCSEC; }
-    // function fmtBool(b) { return b ? "true" : "false"; }
-
-    function deriveViewModel(state, meta, capabilities) {
-      const st = state || {};
-      const mt = meta || {};
-
-      const slitUm = Number(st.slit_width_um);
-      const slitUmOk = Number.isFinite(slitUm);
-      const slitArc = slitUmOk ? (slitUm / SLIT_SCALE_UM_PER_ARCSEC) : NaN;
-      const slitArcOk = Number.isFinite(slitArc);
-
-      const grating = (st.grating ?? "—");
-      const lampOn = !!st.lamp_on;
-
-      const tempC = Number(st.temperature_c);
-      const tempOk = Number.isFinite(tempC);
-
-      const source = (mt.run_mode || mt.hal) ? `${mt.run_mode || "—"} / ${mt.hal || "—"}` : "—";
-      const serverUtc = mt.timestamp_utc ? mt.timestamp_utc : "—";
-
-      const chipSlitText = slitUmOk
-        ? `${slitUm.toFixed(1)} μm  (${slitArcOk ? `${slitArc.toFixed(2)}"` : "—"})`
-        : "—";
-
-      return {
-        chipSlitText,
-        chipGratingText: String(grating),
-        chipLampText: lampOn ? "ON" : "OFF",
-        chipTempText: tempOk ? `${tempC.toFixed(1)} ℃` : "—",
-        chipSourceText: source,
-        chipServerUtcText: serverUtc,
-
-        pillRunmodeText: `RUN_MODE ${mt.run_mode ? mt.run_mode : "—"}`,
-        pillHalText: `HAL ${mt.hal ? mt.hal : "—"}`,
-
-        kvSlitUmText: slitUmOk ? `${slitUm.toFixed(3)} μm` : "—",
-        kvSlitArcsecText: slitArcOk ? `${slitArc.toFixed(4)} arcsec` : "—",
-        kvGratingText: String(grating),
-        kvLampText: lampOn ? "true" : "false",
-        kvTempText: tempOk ? `${tempC.toFixed(3)} ℃` : "—",
-
-        envTempText: tempOk ? `${tempC.toFixed(1)} ℃（暂用 instrument temperature）` : "—",
-
-        slitReadbackText: slitUmOk ? `${slitUm.toFixed(1)} μm` : "—",
-        slitReadbackHintText: slitArcOk ? `≈ ${slitArc.toFixed(2)} arcsec` : "—",
-
-        rawText: JSON.stringify({ state: st, meta: mt, capabilities }, null, 2),
-      };
+    function umToArcsec(um) {
+      if (!Number.isFinite(um)) return null;
+      return um / SLIT_SCALE_UM_PER_ARCSEC;
     }
+
+    function fmtBool(b) { return b ? "true" : "false"; }
 
     function renderState(state, meta) {
       lastState = state || null;
       lastMeta = meta || null;
+
       if (!state) return;
 
-      // Sync time baseline from backend UTC if available (best-effort, non-blocking)
-      syncTimeFromMeta(meta);
+      const slitUm = state.slit_width_um;
+      const slitArc = umToArcsec(slitUm);
 
-      const vm = deriveViewModel(state, meta, lastCapabilities);
+      if (chipSlit) {
+        const a = slitArc == null ? "—" : `${slitArc.toFixed(2)}"`;
+        chipSlit.textContent = `${slitUm.toFixed(1)} μm  (${a})`;
+      }
+      if (chipGrating) chipGrating.textContent = state.grating ?? "—";
+      if (chipLamp) chipLamp.textContent = state.lamp_on ? "ON" : "OFF";
+      if (chipTemp) chipTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃`;
 
-      if (chipSlit) chipSlit.textContent = vm.chipSlitText;
-      if (chipGrating) chipGrating.textContent = vm.chipGratingText;
-      if (chipLamp) chipLamp.textContent = vm.chipLampText;
-      if (chipTemp) chipTemp.textContent = vm.chipTempText;
-      if (chipSource) chipSource.textContent = vm.chipSourceText;
-      if (chipServerUtc) chipServerUtc.textContent = vm.chipServerUtcText;
+      const src = meta && (meta.run_mode || meta.hal) ? `${meta.run_mode || "—"} / ${meta.hal || "—"}` : "—";
+      if (chipSource) chipSource.textContent = src;
 
-      if (pillRunmode) pillRunmode.textContent = vm.pillRunmodeText;
-      if (pillHal) pillHal.textContent = vm.pillHalText;
+      if (chipServerUtc) chipServerUtc.textContent = (meta && meta.timestamp_utc) ? meta.timestamp_utc : "—";
 
-      if (kvSlitUm) kvSlitUm.textContent = vm.kvSlitUmText;
-      if (kvSlitArcsec) kvSlitArcsec.textContent = vm.kvSlitArcsecText;
-      if (kvGrating) kvGrating.textContent = vm.kvGratingText;
-      if (kvLamp) kvLamp.textContent = vm.kvLampText;
-      if (kvTemp) kvTemp.textContent = vm.kvTempText;
+      if (pillRunmode) pillRunmode.textContent = `RUN_MODE ${meta && meta.run_mode ? meta.run_mode : "—"}`;
+      if (pillHal) pillHal.textContent = `HAL ${meta && meta.hal ? meta.hal : "—"}`;
 
-      if (envTemp) envTemp.textContent = vm.envTempText;
+      if (kvSlitUm) kvSlitUm.textContent = `${slitUm.toFixed(3)} μm`;
+      if (kvSlitArcsec) kvSlitArcsec.textContent = slitArc == null ? "—" : `${slitArc.toFixed(4)} arcsec`;
+      if (kvGrating) kvGrating.textContent = String(state.grating ?? "—");
+      if (kvLamp) kvLamp.textContent = fmtBool(!!state.lamp_on);
+      if (kvTemp) kvTemp.textContent = `${(state.temperature_c ?? 0).toFixed(3)} ℃`;
 
-      if (slitReadback) slitReadback.textContent = vm.slitReadbackText;
-      if (slitReadbackHint) slitReadbackHint.textContent = vm.slitReadbackHintText;
+      if (envTemp) envTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃（暂用 instrument temperature）`;
 
-      if (statusRawPre) statusRawPre.textContent = vm.rawText;
+      if (slitReadback) slitReadback.textContent = `${slitUm.toFixed(1)} μm`;
+      if (slitReadbackHint) slitReadbackHint.textContent = slitArc == null ? "—" : `≈ ${slitArc.toFixed(2)} arcsec`;
 
-      renderOperatorStatus(state, meta);
+      if (statusRawPre) {
+        const dump = { state, meta, capabilities: lastCapabilities };
+        statusRawPre.textContent = JSON.stringify(dump, null, 2);
+      }
     }
 
     // ===== Polling =====
@@ -2266,6 +1540,7 @@
         pushLog("ok", `GET /api/v1/status/full (${Math.round(lastRttMs)}ms)`);
         schedulePoll(POLL_MIN_MS);
       } catch (e1) {
+        // fallback: /api/v1/status
         try {
           const st = await apiRequest("/api/v1/status", { method: "GET" });
 
@@ -2341,20 +1616,7 @@
 
     // ===== API base handling =====
     function normalizeBase(s) {
-      let t = (s || "").trim();
-      if (!t) return window.location.origin;
-
-      if (!/^https?:\/\//i.test(t)) {
-        if (t.startsWith("//")) {
-          t = window.location.protocol + t;
-        } else if (t.startsWith("/")) {
-          t = window.location.origin + t;
-        } else {
-          t = window.location.protocol + "//" + t;
-        }
-      }
-
-      t = t.replace(/\/+$/, "");
+      const t = (s || "").trim().replace(/\/+$/, "");
       return t;
     }
 
@@ -2362,7 +1624,7 @@
       apiBase = normalizeBase(nextBase);
       apiBaseInput.value = apiBase;
       pushLog("info", `API base set to ${apiBase}`);
-
+      // force reconnection
       lastOkAt = null;
       lastRttMs = null;
       failCount = 0;
@@ -2372,8 +1634,7 @@
     }
 
     function loadApiBase() {
-      let stored = null;
-      try { stored = localStorage.getItem(LS_API_BASE); } catch {}
+      const stored = localStorage.getItem(LS_API_BASE);
       const def = window.location.origin;
       setApiBase(stored ? stored : def);
     }
@@ -2390,12 +1651,12 @@
 
     apiBaseSaveBtn.addEventListener("click", () => {
       const v = normalizeBase(apiBaseInput.value);
-      try { localStorage.setItem(LS_API_BASE, v); } catch {}
+      localStorage.setItem(LS_API_BASE, v);
       setApiBase(v);
     });
 
     apiBaseResetBtn.addEventListener("click", () => {
-      try { localStorage.removeItem(LS_API_BASE); } catch {}
+      localStorage.removeItem(LS_API_BASE);
       setApiBase(window.location.origin);
     });
 
@@ -2476,6 +1737,7 @@
       });
     }
 
+    // Pause polling when hidden, resume when visible
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         pushLog("info", "page visible: resume polling");
@@ -2487,41 +1749,11 @@
     });
 
     // ===== Init =====
-    window.addEventListener("error", (e) => {
-      try { pushLog("error", `JS error: ${e && e.message ? e.message : e}`); } catch {}
-    });
-
-    window.addEventListener("unhandledrejection", (e) => {
-      try { pushLog("error", `Promise rejection: ${String(e && e.reason ? e.reason : e)}`); } catch {}
-    });
-
     window.addEventListener("load", () => {
       pushLog("info", "UI loaded");
-
-      // Theme: head script already applied theme class (FOUC fix).
-      // loadTheme() will sync toggle text/checked + ensure key migration.
-      loadTheme();
-
-      loadSite();
-      updateClock(true);
-
-      if (themeToggle) themeToggle.addEventListener("change", () => applyTheme(themeToggle.checked ? "light" : "dark"));
-      if (siteSaveBtn) siteSaveBtn.addEventListener("click", saveSiteFromInputs);
-      if (siteResetBtn) siteResetBtn.addEventListener("click", resetSiteDefault);
-
-      document.querySelectorAll("[data-slit-preset]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const val = btn.getAttribute("data-slit-preset");
-          const slitWidth = document.getElementById("slit-width");
-          const slitUnit = document.getElementById("slit-unit");
-          if (slitWidth) slitWidth.value = val;
-          if (slitUnit) slitUnit.value = "arcsec";
-        });
-      });
-
       loadApiBase();
-      renderOperatorView();
 
+      updateClock();
       setInterval(updateClock, 1000);
     });
   </script>
