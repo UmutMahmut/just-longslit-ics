@@ -1,48 +1,125 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>JUST 长缝光谱仪控制面板</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
+<meta charset="utf-8"/>
+<title>JUST 长缝光谱仪控制面板</title>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
+<!--
+    Theme bootstrap (pre-CSS) to prevent FOUC:
+    - Read persisted theme from localStorage (new key: justls_theme_v1)
+    - Migrate legacy key (justls_theme) once
+    - Apply theme class to <html> before CSS is parsed
+    Ref: Web Storage API / localStorage / setItem/getItem (MDN).
+  -->
+<script>
+    (function () {
+      const KEY = "justls_theme_v1";
+      const LEGACY = "justls_theme";
+      let mode = null;
+
+      try {
+        mode = localStorage.getItem(KEY) || localStorage.getItem(LEGACY);
+      } catch (e) {
+        mode = null;
+      }
+
+      if (mode !== "light" && mode !== "dark") {
+        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        mode = prefersLight ? "light" : "dark";
+      }
+
+      const root = document.documentElement;
+      root.classList.toggle("theme-light", mode === "light");
+      root.classList.toggle("theme-dark", mode !== "light");
+
+      // Best-effort persist + migrate
+      try {
+        localStorage.setItem(KEY, mode);
+        if (localStorage.getItem(LEGACY) != null) localStorage.removeItem(LEGACY);
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+<style>
     :root {
-      --bg: #020617;
-      --bg-panel: #020617;
-      --bg-elevated: #0b1120;
+      /* Core tokens (dark / default) */
+      --page-bg-0: #020617;
+      --page-bg-1: #000000;
+
+      --app-grad-0: rgba(15, 23, 42, 0.90);
+      --app-grad-1: rgba(15, 23, 42, 0.98);
+
+      --header-grad-0: rgba(15, 23, 42, 0.80);
+      --header-grad-1: rgba(15, 23, 42, 0.95);
+
+      --elev-grad-0: rgba(15, 23, 42, 0.95);
+      --elev-grad-1: #020617;
+
+      --panel-grad-0: rgba(15, 23, 42, 0.96);
+      --panel-grad-1: rgba(3, 7, 18, 0.98);
+
+      --panel-bot-grad-0: rgba(15, 23, 42, 0.96);
+      --panel-bot-grad-1: #020617;
+
+      --chip-grad-0: rgba(15, 23, 42, 0.90);
+      --chip-grad-1: #020617;
+
+      --code-bg: rgba(15, 23, 42, 0.90);
+      --pill-bg: rgba(15, 23, 42, 0.90);
+      --input-bg: rgba(15, 23, 42, 0.95);
+      --table-head-bg: rgba(15, 23, 42, 0.80);
+
       --accent: #3b82f6;
+      --accent2: #38bdf8;
       --accent-soft: rgba(59, 130, 246, 0.15);
+
       --border: #1f2937;
-      --border-strong: #4b5563;
+      --border-strong: rgba(75, 85, 99, 0.85);
+      --stroke: rgba(148, 163, 184, 0.45);
+
       --text: #e5e7eb;
       --muted: #9ca3af;
+      --muted-2: rgba(148, 163, 184, 0.75);
+      --mono: #cbd5f5;
+
       --danger: #f97373;
       --success: #4ade80;
-      --shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
+
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.90);
       --radius-xl: 18px;
-    }
+
+      --tab-active-text: #e5edff;
+      --ok-text: #bbf7d0;
+      --na-text: #fecaca;
+      --btn-primary-text: #0b1120;
+}
+
 
     * { box-sizing: border-box; }
 
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
+      min-height: 100%;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #020617 0%, #000 55%, #020617 100%);
+      line-height: 1.35;
+      background: radial-gradient(circle at top, var(--page-bg-0) 0%, var(--page-bg-1) 55%, var(--page-bg-0) 100%);
       color: var(--text);
     }
 
     body {
       display: flex;
-      align-items: stretch;
+      align-items: flex-start;
       justify-content: center;
       padding: 16px;
+      overflow: auto;
     }
 
     .app {
       width: 100%;
       max-width: 1300px;
-      background: linear-gradient(165deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      background: linear-gradient(165deg, var(--app-grad-0), var(--app-grad-1));
       border-radius: 24px;
       border: 1px solid rgba(55, 65, 81, 0.7);
       box-shadow: var(--shadow);
@@ -77,14 +154,42 @@
 
     .app-header {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 10px 20px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at left top, var(--header-grad-0), var(--header-grad-1));
+      border: 1px solid rgba(75,85,99,0.6);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 12px;
-      border-radius: var(--radius-xl);
-      background: radial-gradient(circle at left top, rgba(15,23,42,0.8), rgba(15,23,42,0.95));
-      border: 1px solid rgba(75,85,99,0.6);
       flex-wrap: wrap;
+    }
+
+    .header-controls {
+      display: grid;
+      grid-template-columns: minmax(260px, 2.5fr) minmax(300px, 1fr) minmax(300px, 0.01fr) auto;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1100px) {
+      .header-controls {
+        grid-template-columns: minmax(260px, 1fr) minmax(300px, 1fr);
+      }
+      .theme-box { justify-self: start; margin-left: 0; }
+    }
+
+    @media (max-width: 720px) {
+      .header-controls {
+        grid-template-columns: 1fr;
+      }
     }
 
     .title-block {
@@ -114,9 +219,9 @@
     .badge-pill {
       padding: 5px 11px;
       border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
+      border: 1px solid var(--stroke);
       font-size: 11px;
-      background: rgba(15, 23, 42, 0.9);
+      background: var(--pill-bg);
       color: var(--muted);
     }
 
@@ -137,7 +242,7 @@
       align-items: center;
       gap: 6px;
       border: 1px solid rgba(148, 163, 184, 0.7);
-      background-color: rgba(15, 23, 42, 0.9);
+      background-color: var(--pill-bg);
       white-space: nowrap;
     }
 
@@ -162,7 +267,7 @@
     .btn {
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.9);
+      background: var(--pill-bg);
       color: var(--text);
       font-size: 12px;
       padding: 5px 11px;
@@ -182,7 +287,7 @@
     .btn-primary {
       background: linear-gradient(to right, rgba(59, 130, 246, 0.95), rgba(56, 189, 248, 0.95));
       border: none;
-      color: #0b1120;
+      color: var(--btn-primary-text);
       font-weight: 600;
     }
 
@@ -197,24 +302,37 @@
       opacity: 0.6;
       cursor: default;
       box-shadow: none;
-      border-color: rgba(75, 85, 99, 0.7);
+      border-color: var(--border-strong);
     }
 
-    .hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
     .time-block {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      padding: 4px 8px;
-      border-radius: 12px;
-      border: 1px solid rgba(55,65,81,0.9);
-      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
       font-size: 11px;
-      min-width: 120px;
+      min-width: 260px;
     }
 
-    .time-row { display: flex; justify-content: space-between; gap: 6px; }
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .time-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .time-row { display: flex; justify-content: flex-start; gap: 6px; }
     .time-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
 
     .baseurl-box {
@@ -223,8 +341,8 @@
       gap: 6px;
       padding: 4px 8px;
       border-radius: 12px;
-      border: 1px solid rgba(55,65,81,0.9);
-      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
+      border: 1px solid var(--stroke);
+      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
     }
 
     .baseurl-box label {
@@ -236,9 +354,9 @@
     }
 
     .baseurl-box input[type="text"] {
-      background: rgba(15, 23, 42, 0.95);
+      background: var(--input-bg);
       border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
+      border: 1px solid var(--stroke);
       padding: 4px 10px;
       font-size: 12px;
       color: var(--text);
@@ -258,8 +376,8 @@
       gap: 4px;
       padding: 4px;
       border-radius: 999px;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
-      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
+      border: 1px solid var(--stroke);
       overflow-x: auto;
     }
 
@@ -282,11 +400,11 @@
     .tab:hover {
       color: var(--text);
       border-color: rgba(75,85,99,0.9);
-      background: rgba(15,23,42,0.9);
+      background: var(--pill-bg);
     }
 
     .tab-active {
-      color: #e5edff;
+      color: var(--tab-active-text);
       font-weight: 500;
       border-color: rgba(59,130,246,0.9);
       background: radial-gradient(circle at top left, rgba(37,99,235,0.9), rgba(59,130,246,0.5));
@@ -303,8 +421,8 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 999px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.4);
+      background: var(--pill-bg);
+      border: 1px solid var(--stroke);
       color: var(--muted);
     }
 
@@ -313,7 +431,7 @@
     .tab-panel-active { display: block; }
 
     .panel {
-      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(3,7,18,0.98));
+      background: radial-gradient(circle at top, var(--panel-grad-0), var(--panel-grad-1));
       border-radius: var(--radius-xl);
       border: 1px solid var(--border);
       padding: 12px 12px 10px;
@@ -338,7 +456,7 @@
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #e5e7eb;
+      color: var(--text);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -357,6 +475,77 @@
       grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     }
 
+    /* ===== Overview quad layout (2026-01 remake draft) ===== */
+    .layout-overview-quad {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      }
+    
+    .layout-overview-quad .panel.span-2 { grid-column: 1 / -1; }
+@media (max-width: 980px) {
+      .layout-overview-quad { grid-template-columns: 1fr; }
+    }
+
+    .camera-frame {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--panel-grad-1);
+      position: relative;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .camera-frame--mini { min-height: 170px; }
+
+    .camera-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
+      flex: 1 1 auto;
+      display: block;
+    }
+
+    .camera-meta {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(2, 6, 23, 0.20);
+    }
+
+    .bgr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .bgr-grid--tab { gap: 14px; }
+    @media (max-width: 980px) {
+      .bgr-grid { grid-template-columns: 1fr; }
+    }
+    .bgr-label {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px 2px;
+    }
+    .unit-suffix {
+      align-self: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 6px;
+      padding: 6px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 10px;
+      background: rgba(2, 6, 23, 0.18);
+    }
+
+
     @media (max-width: 900px) {
       .layout-2col { grid-template-columns: minmax(0, 1fr); }
     }
@@ -374,8 +563,8 @@
 
     .control-card {
       border-radius: 14px;
-      background: radial-gradient(circle at top, rgba(15,23,42,0.95), #020617);
-      border: 1px solid rgba(31, 41, 55, 0.9);
+      background: radial-gradient(circle at top, var(--elev-grad-0), var(--elev-grad-1));
+      border: 1px solid var(--stroke);
       padding: 9px 10px 9px;
       display: flex;
       flex-direction: column;
@@ -409,9 +598,9 @@
     }
 
     input[type="number"], input[type="text"], select, textarea {
-      background: rgba(15, 23, 42, 0.95);
+      background: var(--input-bg);
       border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
+      border: 1px solid var(--stroke);
       padding: 5px 10px;
       font-size: 12px;
       color: var(--text);
@@ -446,8 +635,8 @@
     .status-chip {
       padding: 6px 8px;
       border-radius: 13px;
-      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), #020617);
-      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: radial-gradient(circle at top left, var(--chip-grad-0), var(--chip-grad-1));
+      border: 1px solid var(--stroke);
       font-size: 12px;
       display: flex;
       flex-direction: column;
@@ -466,12 +655,12 @@
     .status-raw {
       margin-top: 6px;
       border-radius: 14px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(31,41,55,0.9);
+      background: var(--code-bg);
+      border: 1px solid var(--stroke);
       padding: 8px 10px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 11px;
-      color: #cbd5f5;
+      color: var(--mono);
       max-height: 240px;
       overflow: auto;
     }
@@ -490,7 +679,7 @@
       white-space: nowrap;
     }
 
-    .table thead { background: rgba(15,23,42,0.8); }
+    .table thead { background: var(--table-head-bg); }
     .table th { font-weight: 500; color: var(--muted); }
 
     .pill-soft {
@@ -499,18 +688,18 @@
       padding: 2px 6px;
       border-radius: 999px;
       font-size: 10px;
-      background: rgba(15,23,42,0.95);
-      border: 1px solid rgba(55,65,81,0.9);
+      background: var(--pill-bg);
+      border: 1px solid var(--stroke);
       color: var(--muted);
     }
 
-    .pill-ok { border-color: rgba(34,197,94,0.7); color: #bbf7d0; }
-    .pill-na { border-color: rgba(248,113,113,0.6); color: #fecaca; }
+    .pill-ok { border-color: rgba(34,197,94,0.7); color: var(--ok-text); }
+    .pill-na { border-color: rgba(248,113,113,0.6); color: var(--na-text); }
 
     .log-panel {
       border-radius: var(--radius-xl);
       border: 1px solid rgba(31, 41, 55, 0.95);
-      background: radial-gradient(circle at bottom, rgba(15,23,42,0.96), #020617);
+      background: radial-gradient(circle at bottom, var(--panel-bot-grad-0), var(--panel-bot-grad-1));
       padding: 9px 12px 8px;
       display: flex;
       flex-direction: column;
@@ -533,7 +722,7 @@
       list-style: none;
       margin: 0;
       padding: 0;
-      overflow-y: auto;
+      overflow: auto;
       max-height: 160px;
       font-size: 11px;
     }
@@ -571,9 +760,9 @@
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.5);
+      border: 1px solid var(--stroke);
       color: var(--muted);
-      background: rgba(15,23,42,0.9);
+      background: var(--pill-bg);
     }
 
     .kv {
@@ -581,534 +770,826 @@
       grid-template-columns: 180px 1fr 1.5fr;
       gap: 6px;
       font-size: 11px;
-      border-top: 1px solid rgba(31,41,55,0.7);
+      border-top: 1px solid var(--stroke);
       padding-top: 6px;
     }
 
     .kv .k { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; padding-top: 2px; }
-    .kv .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: #cbd5f5; }
+    .kv .v { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: var(--mono); }
     .kv .d { color: var(--muted); }
 
     @media (max-width: 720px) {
       .kv { grid-template-columns: 140px 1fr; }
       .kv .d { grid-column: 1 / -1; padding-left: 0; }
     }
-  </style>
+
+    /* ===== Theme support =====
+       Use <html>.theme-* (not body) to ensure theme is applied before body renders (FOUC fix)
+    */
+    html.theme-dark { color-scheme: dark; }
+    html.theme-light {
+      color-scheme: light;
+
+      --page-bg-0: #eef4ff;
+      --page-bg-1: #ffffff;
+
+      --app-grad-0: rgba(255, 255, 255, 0.86);
+      --app-grad-1: rgba(255, 255, 255, 0.96);
+
+      --header-grad-0: rgba(255, 255, 255, 0.86);
+      --header-grad-1: rgba(255, 255, 255, 0.96);
+
+      --elev-grad-0: rgba(255, 255, 255, 0.92);
+      --elev-grad-1: rgba(248, 250, 252, 0.96);
+
+      --panel-grad-0: rgba(255, 255, 255, 0.90);
+      --panel-grad-1: rgba(255, 255, 255, 0.98);
+
+      --panel-bot-grad-0: rgba(255, 255, 255, 0.92);
+      --panel-bot-grad-1: rgba(248, 250, 252, 0.98);
+
+      --chip-grad-0: rgba(255, 255, 255, 0.92);
+      --chip-grad-1: rgba(248, 250, 252, 0.98);
+
+      --code-bg: rgba(15, 23, 42, 0.04);
+      --pill-bg: rgba(15, 23, 42, 0.04);
+      --input-bg: rgba(255, 255, 255, 0.96);
+      --table-head-bg: rgba(15, 23, 42, 0.04);
+
+      --border: rgba(15, 23, 42, 0.14);
+      --border-strong: rgba(15, 23, 42, 0.26);
+      --stroke: rgba(15, 23, 42, 0.20);
+
+      --text: #0f172a;
+      --muted: rgba(15, 23, 42, 0.68);
+      --muted-2: rgba(15, 23, 42, 0.55);
+      --mono: rgba(15, 23, 42, 0.88);
+
+      --shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+
+      --tab-active-text: #ffffff;
+      --ok-text: #166534;
+      --na-text: #b91c1c;
+      --btn-primary-text: #0b1120;
+}
+
+    /* ===== SITE layout (compact, vertical, operator-friendly) ===== */
+    .baseurl-box.site-box {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .site-title{
+      display: flex;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-start;
+    }
+
+    .site-fields {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .site-field {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+
+    .site-field-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 0.95;
+    }
+
+    .baseurl-box.site-box input[type=number] {
+      width: 120px;
+      max-width: 100%;
+    }
+
+    .site-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1100px) {
+      .baseurl-box.site-box {
+        grid-template-columns: auto 1fr;
+      }
+      .site-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: flex-end;
+      }
+    }
+
+    .theme-box { display: flex; align-items: center; gap: 10px; justify-self: end; margin-left: 0; }
+    .theme-text { color: var(--muted); font-size: 12px; min-width: 28px; }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: rgba(148,163,184,0.35); transition: .2s; border-radius: 999px; border: 1px solid var(--stroke); }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; top: 2.5px; background: white; transition: .2s; border-radius: 999px; }
+    input:checked + .slider { background: rgba(59,130,246,0.45); }
+    input:checked + .slider:before { transform: translateX(19px); }
+
+    /* Slit preset row */
+    .preset-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .preset-row .btn { padding: 4px 10px; }
+
+    /* Raw details */
+    .raw-details { margin-top: 12px; border-top: 1px solid var(--stroke); padding-top: 8px; }
+    .raw-details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+    .raw-details[open] summary { color: var(--text); }
+
+    /* ===== Operator View ===== */
+    .ops-list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .ops-list li { margin: 0; }
+    .ops-list code { font-size: 11px; opacity: 0.9; }
+
+    /* ===== Focus visibility (keyboard) ===== */
+    :focus-visible {
+      outline: 2px solid rgba(59, 130, 246, 0.95);
+      outline-offset: 2px;
+    }
+    .btn:focus-visible,
+    .tab:focus-visible,
+    summary:focus-visible,
+    input[type="text"]:focus-visible,
+    input[type="number"]:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid rgba(59, 130, 246, 0.95);
+      outline-offset: 2px;
+    }
+    .switch input:focus-visible + .slider {
+      outline: 2px solid rgba(59, 130, 246, 0.95);
+      outline-offset: 3px;
+    }
+
+    /* ===== Target size / hit area ===== */
+    .btn { min-height: 28px; }
+    .btn-sm { min-height: 26px; }
+    .tab { min-height: 30px; }
+
+    /* ===== Reduced motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+
+    /* ===== Instrument Status (inline) ===== */
+    
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+    
+    .chip-grid .status-chip {
+      display: inline-flex;
+      flex-direction: row;
+      align-items: baseline;
+      gap: 6px;
+      padding: 7px 10px;
+    }
+    
+    .status-chip-k {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    
+    .status-chip-v {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <div class="app-inner">
-      <header class="app-header">
-        <div class="title-block">
-          <div class="title-main">
-            JUST 长缝光谱仪控制
-            <span class="badge-pill">Local Console · v0.2</span>
-          </div>
-          <div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
-        </div>
-
-        <div class="status-badges">
-          <div class="time-block">
-            <div class="time-row">
-              <span class="time-label">Local</span>
-              <span id="time-local">--:--:--</span>
-            </div>
-            <div class="time-row">
-              <span class="time-label">UTC</span>
-              <span id="time-utc">--:--:--</span>
-            </div>
-            <div class="time-row">
-              <span class="time-label">LST</span>
-              <span id="time-lst">--:--:--</span>
-            </div>
-          </div>
-
-          <div class="baseurl-box">
-            <label for="api-base-input">API</label>
-            <input id="api-base-input" type="text" spellcheck="false" />
-            <button class="btn btn-sm" id="api-base-save">保存</button>
-            <button class="btn btn-sm" id="api-base-reset">重置</button>
-          </div>
-
-          <div class="badge" id="connection-badge" title="连接状态（基于 /api/v1/status/full 轮询）">
-            <span class="badge-dot" id="connection-dot"></span>
-            <span id="connection-text">未连接</span>
-          </div>
-
-          <div class="badge" title="RTT / 最近成功 / 连续失败 / 当前轮询间隔">
-            <span id="conn-metrics">RTT — · OK — · FAIL 0 · 1.0s</span>
-          </div>
-
-          <button class="btn btn-sm" id="refresh-status-btn">刷新</button>
-        </div>
-      </header>
-
-      <nav class="tabs" id="main-tabs">
-        <button class="tab tab-active" data-tab="overview">总览 <span class="tab-pill">Overview</span></button>
-        <button class="tab" data-tab="env">环境监测 <span class="tab-pill">Env</span></button>
-        <button class="tab" data-tab="slit">狭缝与监测 <span class="tab-pill">Slit</span></button>
-        <button class="tab" data-tab="cal">定标 <span class="tab-pill">Cal</span></button>
-        <button class="tab" data-tab="guiding">偏置导星 <span class="tab-pill">Guider</span></button>
-        <button class="tab" data-tab="cameras">三通道相机 <span class="tab-pill">B/G/R</span></button>
-        <button class="tab" data-tab="quicklook">数据快显 <span class="tab-pill">Quicklook</span></button>
-        <button class="tab" data-tab="logs">日志 <span class="tab-pill">Logs</span></button>
-      </nav>
-
-      <main class="tab-content">
-        <!-- Overview -->
-        <section class="tab-panel tab-panel-active" data-tab-panel="overview">
-          <div class="layout-2col layout-overview-main">
-            <section class="panel">
-              <div class="panel-header">
-                <div>
-                  <div class="panel-title">模块能力 / Capabilities</div>
-                  <div class="panel-kicker">来自 <code>/api/v1/status/full</code> 的 capabilities（用于占位模块启用/禁用）</div>
-                </div>
-                <div class="panel-actions">
-                  <span class="pill-soft" id="pill-runmode">RUN_MODE —</span>
-                  <span class="pill-soft" id="pill-hal">HAL —</span>
-                </div>
-              </div>
-
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>模块</th>
-                    <th>状态</th>
-                    <th>说明</th>
-                  </tr>
-                </thead>
-                <tbody id="cap-table-body"></tbody>
-              </table>
-
-              <div class="hint">说明：外部 OCS/TCS/队列不在本 Sprint 范围，UI 仅保留占位，不对接实际控制。</div>
-            </section>
-
-            <section class="panel">
-              <div class="panel-header">
-                <div>
-                  <div class="panel-title">快速控制 / Quick Controls</div>
-                  <div class="panel-kicker">真实可控项：狭缝 / 光栅 / 主定标灯（v0.1 契约）</div>
-                </div>
-              </div>
-
-              <div class="control-group">
-                <div class="control-card">
-                  <div class="control-title">
+<div class="app">
+<div class="app-inner">
+<header class="app-header">
+<div class="header-top">
+<div class="title-block">
+<div class="title-main">
+              JUST 长缝光谱仪控制
+              <span class="badge-pill">Local Console · v0.2</span>
+</div>
+<div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
+</div>
+<div class="status-badges">
+<div class="badge" id="connection-badge" title="连接状态（基于 /api/v1/status/full 轮询）">
+<span class="badge-dot" id="connection-dot"></span>
+<span id="connection-text">未连接</span>
+</div>
+<div class="badge" title="RTT / 最近成功 / 连续失败 / 当前轮询间隔">
+<span id="conn-metrics">RTT — · OK — · FAIL 0 · 1.0s</span>
+</div>
+<button class="btn btn-sm" id="refresh-status-btn">刷新</button>
+</div>
+</div>
+<div class="header-controls">
+<div class="time-block">
+<div aria-label="Time &amp; sky" class="time-grid" role="group">
+<div class="time-col">
+<div class="time-row">
+<span class="time-label">Local</span>
+<span id="time-local">--:--:--</span>
+</div>
+<div class="time-row">
+<span class="time-label">UTC</span>
+<span id="time-utc">--:--:--</span>
+</div>
+<div class="time-row">
+<span class="time-label">LST</span>
+<span id="time-lst">--:--:--</span>
+</div>
+</div>
+<div class="time-col">
+<div class="time-row">
+<span class="time-label">EPOCH</span>
+<span id="time-epoch">----<!--.--</span-->
+</span></div>
+<div class="time-row">
+<span class="time-label">JD</span>
+<span id="time-jd">------.--</span>
+</div>
+<div class="time-row">
+<span class="time-label">MJD</span>
+<span id="time-mjd">------.--</span>
+</div>
+</div>
+<div class="time-col">
+<div class="time-row">
+<span class="time-label">DATE</span>
+<span id="time-date">YYYY-MM-DD</span>
+</div>
+<div class="time-row">
+<span class="time-label">DAWN</span>
+<span id="time-dawn">--:--</span>
+</div>
+<div class="time-row">
+<span class="time-label">DUSK</span>
+<span id="time-dusk">--:--</span>
+</div>
+</div>
+</div>
+</div>
+<div class="baseurl-box">
+<label for="api-base-input">API</label>
+<input id="api-base-input" spellcheck="false" type="text"/>
+<button class="btn btn-sm" id="api-base-save">保存</button>
+<button class="btn btn-sm" id="api-base-reset">重置</button>
+</div>
+<div class="baseurl-box site-box">
+<label class="site-title">SITE</label>
+<div aria-label="Observatory site" class="site-fields" role="group">
+<div class="site-field">
+<span class="site-field-label">LAT °N</span>
+<input aria-label="Latitude (deg, N+)" id="site-lat" step="0.0001" title="Latitude (deg, N+)" type="number"/>
+</div>
+<div class="site-field">
+<span class="site-field-label">LON °E</span>
+<input aria-label="Longitude (deg, E+)" id="site-lon" step="0.0001" title="Longitude (deg, E+)" type="number"/>
+</div>
+<div class="site-field">
+<span class="site-field-label">ALT m</span>
+<input aria-label="Altitude (m)" id="site-alt" step="1" title="Altitude (m)" type="number"/>
+</div>
+</div>
+<div class="site-actions">
+<button class="btn btn-sm" id="site-save">保存</button>
+<button class="btn btn-sm" id="site-reset">默认</button>
+</div>
+</div>
+<div class="theme-box" title="夜间/白天主题切换（本地保存）">
+<span class="theme-label">主题</span>
+<label class="switch">
+<input id="theme-toggle" type="checkbox"/>
+<span class="slider"></span>
+</label>
+<span class="theme-text" id="theme-text">夜间</span>
+</div>
+</div>
+</header>
+<nav class="tabs" id="main-tabs">
+<button class="tab tab-active" data-tab="overview">总览 <span class="tab-pill">Overview</span></button> <button class="tab" data-tab="slit">狭缝与监测 <span class="tab-pill">Slit</span></button>
+<button class="tab" data-tab="cal">定标 <span class="tab-pill">Cal</span></button>
+<button class="tab" data-tab="guiding">偏置导星 <span class="tab-pill">Guider</span></button>
+<button class="tab" data-tab="cameras">三通道相机 <span class="tab-pill">B/G/R</span></button>
+<button class="tab" data-tab="quicklook">数据快显 <span class="tab-pill">Quicklook</span></button>
+<button class="tab" data-tab="logs">日志 <span class="tab-pill">Logs</span></button>
+</nav>
+<main class="tab-content">
+<!-- Overview -->
+<section class="tab-panel tab-panel-active" data-tab-panel="overview">
+<div class="layout-overview-quad">
+<!-- 1) Quick Control -->
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">快速控制 / Quick Control</div>
+<div class="panel-kicker">控制接口基于 <code>/api/v1/*</code>（本阶段：去掉光栅，新增狭缝方向）</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="status-freshness">status: —</span>
+</div>
+</div>
+<div class="control-group">
+<div class="control-card">
+<div class="control-title">
                     狭缝宽度
                     <span class="control-sub">POST /api/v1/slit</span>
-                  </div>
-                  <form id="slit-form">
-                    <div class="form-row">
-                      <label for="slit-width">宽度</label>
-                      <input type="number" step="0.1" id="slit-width" required />
-                      <select id="slit-unit" style="max-width: 120px; flex: 0 0 auto;">
-                        <option value="um">μm</option>
-                        <option value="arcsec">arcsec</option>
-                      </select>
-                    </div>
-                    <div class="hint">后端要求：<code>{"width_um": 0 &lt; x ≤ 5000}</code>。若以 arcsec 输入，将按 128.34 μm/arcsec 换算。</div>
-                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
-                      <button type="submit" class="btn btn-primary btn-sm" id="slit-submit-btn">应用</button>
-                    </div>
-                  </form>
-                </div>
-
-                <div class="control-card">
-                  <div class="control-title">
-                    光栅选择
-                    <span class="control-sub">POST /api/v1/grating</span>
-                  </div>
-                  <form id="grating-form">
-                    <div class="form-row">
-                      <label for="grating-name">光栅</label>
-                      <select id="grating-name" required>
-                        <option value="G1">G1</option>
-                        <option value="G2">G2（占位）</option>
-                        <option value="G3">G3（占位）</option>
-                      </select>
-                    </div>
-                    <div class="hint">后端要求：<code>{"name": "G1"}</code>。当前 demo_flow 固定使用 G1；其它选项是否支持取决于 HAL/实现。</div>
-                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
-                      <button type="submit" class="btn btn-primary btn-sm" id="grating-submit-btn">应用</button>
-                    </div>
-                  </form>
-                </div>
-
-                <div class="control-card">
-                  <div class="control-title">
+</div>
+<form id="slit-form">
+<div class="form-row">
+<label for="slit-width">宽度</label>
+<input id="slit-width" required="" step="0.1" type="number"/>
+<select id="slit-unit" style="max-width: 120px; flex: 0 0 auto;">
+<option value="arcsec">arcsec</option>
+<option value="um">μm</option>
+</select>
+</div>
+<div class="form-row" style="margin-top: 6px;">
+<label style="visibility:hidden">preset</label>
+<div class="btn-row" style="flex: 1 1 auto;">
+<button class="btn btn-sm" data-slit-preset="0.8" type="button">0.8"</button>
+<button class="btn btn-sm" data-slit-preset="1.0" type="button">1.0"</button>
+<button class="btn btn-sm" data-slit-preset="1.2" type="button">1.2"</button>
+</div>
+</div>
+<div class="hint">后端要求：<code>{"width_um": 0 &lt; x ≤ 5000}</code>。若以 arcsec 输入，将按 128.34 μm/arcsec 换算。</div>
+<div class="form-row" style="margin-top: 8px; justify-content: flex-end;">
+<button class="btn btn-primary btn-sm" id="slit-submit-btn" type="submit">应用</button>
+</div>
+</form>
+</div>
+<div class="control-card">
+<div class="control-title">
+                    狭缝方向（角度）
+                    <span class="control-sub">POST /api/v1/slit_angle</span>
+</div>
+<form id="slit-angle-form">
+<div class="form-row">
+<label for="slit-angle-deg">角度</label>
+<input id="slit-angle-deg" required="" step="1" type="number"/>
+<span class="unit-suffix">deg</span>
+</div>
+<div class="form-row" style="margin-top: 6px;">
+<label style="visibility:hidden">preset</label>
+<div class="btn-row" style="flex: 1 1 auto;">
+<button class="btn btn-sm" data-angle-preset="-90" type="button">-90°</button>
+<button class="btn btn-sm" data-angle-preset="-45" type="button">-45°</button>
+<button class="btn btn-sm" data-angle-preset="0" type="button">0°</button>
+<button class="btn btn-sm" data-angle-preset="45" type="button">+45°</button>
+<button class="btn btn-sm" data-angle-preset="90" type="button">+90°</button>
+</div>
+</div>
+<div class="hint">暂定范围：<code>-90 ≤ angle_deg ≤ 90</code>。这是本次重做新增项目（用于替代光栅模块）。</div>
+<div class="form-row" style="margin-top: 8px; justify-content: flex-end;">
+<button class="btn btn-primary btn-sm" id="slit-angle-submit-btn" type="submit">应用</button>
+</div>
+</form>
+</div>
+<div class="control-card">
+<div class="control-title">
                     主定标灯
                     <span class="control-sub">POST /api/v1/lamp</span>
-                  </div>
-                  <form id="lamp-form">
-                    <div class="form-row">
-                      <label for="lamp-on">灯状态</label>
-                      <select id="lamp-on">
-                        <option value="true">ON</option>
-                        <option value="false">OFF</option>
-                      </select>
-                    </div>
-                    <div class="hint">后端要求：<code>{"on": true|false}</code>。多光源（Ne/HgAr/ThAr/FeAr/氘卤）在本 Sprint 仅做占位。</div>
-                    <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
-                      <button type="submit" class="btn btn-primary btn-sm" id="lamp-submit-btn">应用</button>
-                    </div>
-                  </form>
-                </div>
-
-                <div class="control-card">
-                  <div class="control-title">
-                    工具
-                    <span class="control-sub">Utilities</span>
-                  </div>
-                  <div class="form-row">
-                    <button class="btn btn-sm" type="button" id="quick-refresh-btn">刷新状态</button>
-                    <button class="btn btn-sm" type="button" id="copy-log-btn">复制日志</button>
-                    <button class="btn btn-sm" type="button" id="clear-log-btn">清空日志</button>
-                  </div>
-                  <div class="hint">复制日志用于现场排障；无需打开 DevTools。</div>
-                </div>
+</div>
+<form id="lamp-form">
+<div class="form-row">
+<label for="lamp-on">灯状态</label>
+<select id="lamp-on">
+<option value="true">ON</option>
+<option value="false">OFF</option>
+</select>
+</div>
+<div class="hint">后端要求：<code>{"on": true|false}</code>。本 UI 以“主定标灯”作为第一阶段唯一真实定标光源。</div>
+<div class="form-row" style="margin-top: 8px; justify-content: flex-end;">
+<button class="btn btn-primary btn-sm" id="lamp-submit-btn" type="submit">应用</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+<!-- 2) Slit Camera -->
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">狭缝相机 / Slit Camera</div>
+<div class="panel-kicker">轮询最新帧（不保存）：<code>GET /api/v1/camera/slit/latest.jpg</code></div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="slitcam-pill">slitcam: —</span>
+</div>
+</div>
+<div class="camera-frame">
+<img alt="slit camera latest frame" class="camera-img" id="slitcam-img"/>
+<div class="camera-meta" id="slitcam-meta">等待帧数据...</div>
+</div>
+<div class="hint" style="margin-top:10px;">
+                若后端未实现该接口，本区域将保持占位。建议后端返回 <code>Cache-Control: no-store</code> 避免浏览器缓存旧帧。
               </div>
-            </section>
-          </div>
-
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">仪器状态 / Instrument Status</div>
-                <div class="panel-kicker">轮询：<code>/api/v1/status/full</code>（失败则降级 <code>/api/v1/status</code>）</div>
+</section>
+<!-- 3) B/G/R Science Channels -->
+<section class="panel span-2">
+<div class="panel-header">
+<div>
+<div class="panel-title">三通道相机 / B-G-R</div>
+<div class="panel-kicker">轮询最新帧（不保存）：<code>/api/v1/camera/{b|g|r}/latest.jpg</code></div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="bgr-pill">bgr: —</span>
+</div>
+</div>
+<div class="bgr-grid">
+<div class="bgr-cell">
+<div class="bgr-label">B</div>
+<div class="camera-frame camera-frame--mini">
+<img alt="B channel latest frame" class="camera-img" id="bgr-img-b"/>
+<div class="camera-meta" id="bgr-meta-b">—</div>
+</div>
+</div>
+<div class="bgr-cell">
+<div class="bgr-label">G</div>
+<div class="camera-frame camera-frame--mini">
+<img alt="G channel latest frame" class="camera-img" id="bgr-img-g"/>
+<div class="camera-meta" id="bgr-meta-g">—</div>
+</div>
+</div>
+<div class="bgr-cell">
+<div class="bgr-label">R</div>
+<div class="camera-frame camera-frame--mini">
+<img alt="R channel latest frame" class="camera-img" id="bgr-img-r"/>
+<div class="camera-meta" id="bgr-meta-r">—</div>
+</div>
+</div>
+</div>
+<div class="hint" style="margin-top:10px;">
+                该区域用于“总览集中展示关键数据”。曝光控制与 FITS 管线仍可留在子 tab（后续实现）。
               </div>
-              <div class="panel-actions">
-                <span class="hint" id="status-freshness">Last OK: —</span>
-              </div>
-            </div>
-
-            <div class="status-summary">
-              <div class="status-chip">
-                <div class="status-chip-label">SLIT</div>
-                <div class="status-chip-value" id="chip-slit">—</div>
-              </div>
-              <div class="status-chip">
-                <div class="status-chip-label">GRATING</div>
-                <div class="status-chip-value" id="chip-grating">—</div>
-              </div>
-              <div class="status-chip">
-                <div class="status-chip-label">CAL LAMP</div>
-                <div class="status-chip-value" id="chip-lamp">—</div>
-              </div>
-              <div class="status-chip">
-                <div class="status-chip-label">TEMP</div>
-                <div class="status-chip-value" id="chip-temp">—</div>
-              </div>
-              <div class="status-chip">
-                <div class="status-chip-label">SOURCE</div>
-                <div class="status-chip-value" id="chip-source">—</div>
-              </div>
-              <div class="status-chip">
-                <div class="status-chip-label">SERVER UTC</div>
-                <div class="status-chip-value" id="chip-server-utc">—</div>
-              </div>
-            </div>
-
-            <div class="control-card">
-              <div class="control-title">字段解释 <span class="control-sub">Readable Table</span></div>
-              <div class="kv">
-                <div class="k">slit_width_um</div>
-                <div class="v" id="kv-slit-um">—</div>
-                <div class="d">狭缝宽度（μm），后端约束：0 &lt; x ≤ 5000</div>
-
-                <div class="k">slit_width_arcsec</div>
-                <div class="v" id="kv-slit-arcsec">—</div>
-                <div class="d">按 128.34 μm/arcsec 换算（操作层更直观）</div>
-
-                <div class="k">grating</div>
-                <div class="v" id="kv-grating">—</div>
-                <div class="d">当前光栅档位（枚举/字符串）</div>
-
-                <div class="k">lamp_on</div>
-                <div class="v" id="kv-lamp">—</div>
-                <div class="d">主定标灯开关（多光源细分在后续 API 扩展）</div>
-
-                <div class="k">temperature_c</div>
-                <div class="v" id="kv-temp">—</div>
-                <div class="d">温度（℃，当前为模拟或设备读数）</div>
-              </div>
-            </div>
-
-            <div class="status-raw">
-              <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
-            </div>
-          </section>
-
-          <section class="log-panel">
-            <div class="log-header">
-              <span>事件日志 / Event Log</span>
-              <span id="log-hint">最多保留 200 条</span>
-            </div>
-            <ul class="log-list" id="log-list"></ul>
-          </section>
-        </section>
-
-        <!-- Env -->
-        <section class="tab-panel" data-tab-panel="env">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">观测环境监测 / Environment</div>
-                <div class="panel-kicker">本 Sprint 不实现外部气象站接入；仅做占位与能力标识</div>
-              </div>
-              <div class="panel-actions">
-                <span class="pill-todo" id="env-pill">TODO：env_sensors API</span>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <div class="control-card">
-                <div class="control-title">温度 <span class="control-sub">Temperature</span></div>
-                <div class="hint">可先复用 status.temperature_c 作为“仪器/机箱温度”，后续再引入湿度/风速/视宁度等。</div>
-                <div class="status-chip-value" id="env-temp">—</div>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">湿度 / 风 / Seeing <span class="control-sub">Placeholder</span></div>
-                <ul class="todo-list">
-                  <li>湿度 RH（占位）</li>
-                  <li>风速/风向（占位）</li>
-                  <li>Seeing（占位）</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-        </section>
-
-        <!-- Slit -->
-        <section class="tab-panel" data-tab-panel="slit">
-          <div class="layout-2col">
-            <section class="panel">
-              <div class="panel-header">
-                <div>
-                  <div class="panel-title">狭缝控制 / Slit Control</div>
-                  <div class="panel-kicker">真实可控项：狭缝宽度（v0.1）</div>
-                </div>
-                <div class="panel-actions">
-                  <span class="pill-soft" id="slit-cap-pill">cap: slit</span>
-                </div>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">宽度设置 <span class="control-sub">Width</span></div>
-                <div class="hint">建议操作层以 arcsec 记忆，但实际控制用 μm；本页提供双单位显示与输入。</div>
-                <form id="slit-form-2">
-                  <div class="form-row">
-                    <label for="slit2-width">宽度</label>
-                    <input type="number" step="0.1" id="slit2-width" required />
-                    <select id="slit2-unit" style="max-width: 120px; flex: 0 0 auto;">
-                      <option value="arcsec">arcsec</option>
-                      <option value="um">μm</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
-                    <button type="submit" class="btn btn-primary btn-sm" id="slit2-submit-btn">应用</button>
-                  </div>
-                </form>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">狭缝监测相机 <span class="control-sub">Slit Monitor Camera</span></div>
-                <ul class="todo-list">
-                  <li>本 Sprint 不实现图像流接口。</li>
-                  <li>后续可增加：最新帧缩略图 + 狭缝宽度测量结果（μm / arcsec）。</li>
-                </ul>
-              </div>
-            </section>
-
-            <section class="panel">
-              <div class="panel-header">
-                <div>
-                  <div class="panel-title">狭缝读数 / Readback</div>
-                  <div class="panel-kicker">来自状态轮询（同 Overview）</div>
-                </div>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">当前狭缝 <span class="control-sub">Current</span></div>
-                <div class="status-chip-value" id="slit-readback">—</div>
-                <div class="hint" id="slit-readback-hint">—</div>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">测量结果（占位） <span class="control-sub">Measured</span></div>
-                <ul class="todo-list">
-                  <li>slit_width_measured_um（占位）</li>
-                  <li>slit_width_measured_arcsec（占位）</li>
-                </ul>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        <!-- Cal -->
-        <section class="tab-panel" data-tab-panel="cal">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">定标 / Calibration</div>
-                <div class="panel-kicker">本 Sprint：仅实现“主定标灯开关”真实控制；多光源选择先占位</div>
-              </div>
-              <div class="panel-actions">
-                <span class="pill-soft" id="cal-cap-pill">cap: calib_lamps</span>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <div class="control-card">
-                <div class="control-title">主定标灯 <span class="control-sub">Master Lamp</span></div>
-                <div class="hint">对应 v0.1 的 <code>lamp_on</code>；多灯种（Ne/HgAr/ThAr/FeAr/氘卤）在后续 API 扩展。</div>
-                <form id="lamp-form-2">
-                  <div class="form-row">
-                    <label for="lamp2-on">状态</label>
-                    <select id="lamp2-on">
-                      <option value="true">ON</option>
-                      <option value="false">OFF</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-top:8px; justify-content:flex-end;">
-                    <button type="submit" class="btn btn-primary btn-sm" id="lamp2-submit-btn">应用</button>
-                  </div>
-                </form>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">光源选择（占位） <span class="control-sub">Sources</span></div>
-                <div class="form-row">
-                  <label>光源</label>
-                  <select disabled>
-                    <option>Flat：氘卤光源（占位）</option>
-                    <option>Arc：Ne（占位）</option>
-                    <option>Arc：HgAr（占位）</option>
-                    <option>Arc：ThAr（占位）</option>
-                    <option>Arc：FeAr（占位）</option>
-                  </select>
-                </div>
-                <div class="hint">说明：后续需要扩展 API（例如 <code>/api/v1/cal/source</code>）后才能接入。</div>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">定标序列（占位） <span class="control-sub">Sequence</span></div>
-                <ul class="todo-list">
-                  <li>Flat × N + Arc × M</li>
-                  <li>执行过程写入日志，并可导出</li>
-                </ul>
-              </div>
-
-              <div class="control-card">
-                <div class="control-title">备注 <span class="control-sub">Notes</span></div>
-                <textarea placeholder="记录：光源/光栅/狭缝等（未来可写入 FITS header，由外部模块或后续实现接手）。"></textarea>
-              </div>
-            </div>
-          </section>
-        </section>
-
-        <!-- Guiding -->
-        <section class="tab-panel" data-tab-panel="guiding">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">偏置导星 / Guider (占位)</div>
-                <div class="panel-kicker">本 Sprint 不接入导星相机/闭环；仅展示能力标识与占位</div>
-              </div>
-              <div class="panel-actions">
-                <span class="pill-soft" id="guiding-cap-pill">cap: guider</span>
-                <span class="pill-todo">TODO：guider API</span>
-              </div>
-            </div>
-            <ul class="todo-list">
-              <li>显示导星相机在线状态、曝光参数（占位）</li>
-              <li>导星星选择与 guiding loop（占位）</li>
-            </ul>
-          </section>
-        </section>
-
-        <!-- Cameras -->
-        <section class="tab-panel" data-tab-panel="cameras">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">三通道相机 / B-G-R (占位)</div>
-                <div class="panel-kicker">本 Sprint 不实现相机曝光控制；仅占位与能力标识</div>
-              </div>
-              <div class="panel-actions">
-                <span class="pill-soft" id="cameras-cap-pill">cap: science_channels_bgr</span>
-                <span class="pill-todo">TODO：camera API</span>
-              </div>
-            </div>
-            <ul class="todo-list">
-              <li>蓝/绿/红通道：曝光参数、快门、触发（占位）</li>
-              <li>最近一帧缩略图 + 打开 ds9（占位）</li>
-            </ul>
-          </section>
-        </section>
-
-        <!-- Quicklook -->
-        <section class="tab-panel" data-tab-panel="quicklook">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">数据快显 / Quicklook (占位)</div>
-                <div class="panel-kicker">本 Sprint 不实现 FITS 写入/QC；仅占位</div>
-              </div>
-              <div class="panel-actions">
-                <span class="pill-todo">TODO：quicklook API</span>
-              </div>
-            </div>
-            <ul class="todo-list">
-              <li>最新帧/最新谱图缩略图（占位）</li>
-              <li>下载链接/路径（占位）</li>
-              <li>快速 QC 指标（占位）</li>
-            </ul>
-          </section>
-        </section>
-
-        <!-- Logs -->
-        <section class="tab-panel" data-tab-panel="logs">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">日志 / Logs</div>
-                <div class="panel-kicker">前端内存日志（200条）+ 一键复制；后续可落盘或接数据库</div>
-              </div>
-              <div class="panel-actions">
-                <button class="btn btn-sm" type="button" id="logs-copy-btn">复制日志</button>
-                <button class="btn btn-sm" type="button" id="logs-clear-btn">清空</button>
-              </div>
-            </div>
-
-            <section class="log-panel">
-              <div class="log-header">
-                <span>Event Log</span>
-                <span id="log-count">0 / 200</span>
-              </div>
-              <ul class="log-list" id="log-list-full"></ul>
-            </section>
-          </section>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <script>
+</section>
+<!-- 4) Instrument Status -->
+<section class="panel span-2">
+<div class="panel-header">
+<div>
+<div class="panel-title">仪器状态 / Instrument Status</div>
+<div class="panel-kicker">来自 <code>/api/v1/status/full</code>（失败 fallback <code>/api/v1/status</code>）</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="pill-runmode">RUN_MODE —</span>
+<span class="pill-soft" id="pill-hal">HAL —</span>
+</div>
+</div>
+<div class="chip-grid">
+<div class="status-chip">
+<div class="status-chip-k">slit_width</div>
+<div class="status-chip-v" id="chip-slit">—</div>
+</div>
+<div class="status-chip">
+<div class="status-chip-k">slit_angle</div>
+<div class="status-chip-v" id="chip-slit-angle">—</div>
+</div>
+<div class="status-chip">
+<div class="status-chip-k">lamp_on</div>
+<div class="status-chip-v" id="chip-lamp">—</div>
+</div>
+<div class="status-chip">
+<div class="status-chip-k">temperature</div>
+<div class="status-chip-v" id="chip-temp">—</div>
+</div>
+<div class="status-chip">
+<div class="status-chip-k">source</div>
+<div class="status-chip-v" id="chip-source">—</div>
+</div>
+<div class="status-chip">
+<div class="status-chip-k">server_utc</div>
+<div class="status-chip-v" id="chip-server-utc">—</div>
+</div>
+</div>
+<div class="hint" id="status-hint" style="margin-top:10px;">—</div>
+</section>
+</div>
+<details class="raw-details" id="raw-details">
+<summary>原始状态 / Raw (Debug only)</summary>
+<div class="status-raw">
+<pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
+</div>
+</details>
+<section class="log-panel">
+<div class="log-header">
+<span>事件日志 / Event Log</span>
+<span id="log-hint">最多保留 200 条</span>
+</div>
+<ul class="log-list" id="log-list"></ul>
+</section>
+</section>
+<!-- Slit -->
+<section class="tab-panel" data-tab-panel="slit">
+<div class="layout-2col">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">狭缝控制 / Slit Control</div>
+<div class="panel-kicker">真实可控项：狭缝宽度（v0.1）</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="slit-cap-pill">cap: slit</span>
+</div>
+</div>
+<div class="control-card">
+<div class="control-title">宽度设置 <span class="control-sub">Width</span></div>
+<div class="hint">建议操作层以 arcsec 记忆，但实际控制用 μm；本页提供双单位显示与输入。</div>
+<form id="slit-form-2">
+<div class="form-row">
+<label for="slit2-width">宽度</label>
+<input id="slit2-width" required="" step="0.1" type="number"/>
+<select id="slit2-unit" style="max-width: 120px; flex: 0 0 auto;">
+<option value="arcsec">arcsec</option>
+<option value="um">μm</option>
+</select>
+</div>
+<div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+<button class="btn btn-primary btn-sm" id="slit2-submit-btn" type="submit">应用</button>
+</div>
+</form>
+</div>
+<div class="control-card">
+<div class="control-title">狭缝监测相机 <span class="control-sub">Slit Monitor Camera</span></div>
+<div class="camera-frame camera-frame--mini">
+<img alt="slit camera latest frame" class="camera-img" id="slitcam-img-2"/>
+<div class="camera-meta" id="slitcam-meta-2">等待帧数据...</div>
+</div>
+<div class="hint" style="margin-top:10px;">轮询最新帧（不保存）：<code>GET /api/v1/camera/slit/latest.jpg</code></div>
+</div>
+</section>
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">狭缝读数 / Readback</div>
+<div class="panel-kicker">来自状态轮询（同 Overview）</div>
+</div>
+</div>
+<div class="control-card">
+<div class="control-title">当前狭缝 <span class="control-sub">Current</span></div>
+<div class="status-chip-value" id="slit-readback">—</div>
+<div class="hint" id="slit-readback-hint">—</div>
+</div>
+<div class="control-card">
+<div class="control-title">测量结果（占位） <span class="control-sub">Measured</span></div>
+<ul class="todo-list">
+<li>slit_width_measured_um（占位）</li>
+<li>slit_width_measured_arcsec（占位）</li>
+</ul>
+</div>
+</section>
+</div>
+</section>
+<!-- Cal -->
+<section class="tab-panel" data-tab-panel="cal">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">定标 / Calibration</div>
+<div class="panel-kicker">本 Sprint：仅实现“主定标灯开关”真实控制；多光源选择先占位</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="cal-cap-pill">cap: calib_lamps</span>
+</div>
+</div>
+<div class="control-group">
+<div class="control-card">
+<div class="control-title">主定标灯 <span class="control-sub">Master Lamp</span></div>
+<div class="hint">对应 v0.1 的 <code>lamp_on</code>；多灯种（Ne/HgAr/ThAr/FeAr/氘卤）在后续 API 扩展。</div>
+<form id="lamp-form-2">
+<div class="form-row">
+<label for="lamp2-on">状态</label>
+<select id="lamp2-on">
+<option value="true">ON</option>
+<option value="false">OFF</option>
+</select>
+</div>
+<div class="form-row" style="margin-top:8px; justify-content:flex-end;">
+<button class="btn btn-primary btn-sm" id="lamp2-submit-btn" type="submit">应用</button>
+</div>
+</form>
+</div>
+<div class="control-card">
+<div class="control-title">光源选择（占位） <span class="control-sub">Sources</span></div>
+<div class="form-row">
+<label>光源</label>
+<select disabled="">
+<option>Flat：氘卤光源（占位）</option>
+<option>Arc：Ne（占位）</option>
+<option>Arc：HgAr（占位）</option>
+<option>Arc：ThAr（占位）</option>
+<option>Arc：FeAr（占位）</option>
+</select>
+</div>
+<div class="hint">说明：后续需要扩展 API（例如 <code>/api/v1/cal/source</code>）后才能接入。</div>
+</div>
+<div class="control-card">
+<div class="control-title">定标序列（占位） <span class="control-sub">Sequence</span></div>
+<ul class="todo-list">
+<li>Flat × N + Arc × M</li>
+<li>执行过程写入日志，并可导出</li>
+</ul>
+</div>
+<div class="control-card">
+<div class="control-title">备注 <span class="control-sub">Notes</span></div>
+<textarea placeholder="记录：光源/狭缝/角度等（未来可写入 FITS header，由外部模块或后续实现接手）。"></textarea>
+</div>
+</div>
+</section>
+</section>
+<!-- Guiding -->
+<section class="tab-panel" data-tab-panel="guiding">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">偏置导星 / Guider (占位)</div>
+<div class="panel-kicker">本 Sprint 不接入导星相机/闭环；仅展示能力标识与占位</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="guiding-cap-pill">cap: guider</span>
+<span class="pill-todo">TODO：guider API</span>
+</div>
+</div>
+<ul class="todo-list">
+<li>显示导星相机在线状态、曝光参数（占位）</li>
+<li>导星星选择与 guiding loop（占位）</li>
+</ul>
+</section>
+</section>
+<!-- Cameras -->
+<section class="tab-panel" data-tab-panel="cameras">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">三通道相机 / B-G-R</div>
+<div class="panel-kicker">本阶段优先：总览与本页展示最新帧（不保存）；曝光控制后续再加</div>
+</div>
+<div class="panel-actions">
+<span class="pill-soft" id="cameras-cap-pill">cap: science_channels_bgr</span>
+<span class="pill-soft">camera: polling latest frame</span>
+</div>
+</div>
+<div class="bgr-grid bgr-grid--tab">
+<div class="bgr-cell">
+<div class="bgr-label">B</div>
+<div class="camera-frame">
+<img alt="B channel latest frame" class="camera-img" id="bgr-img-b-2"/>
+<div class="camera-meta" id="bgr-meta-b-2">—</div>
+</div>
+</div>
+<div class="bgr-cell">
+<div class="bgr-label">G</div>
+<div class="camera-frame">
+<img alt="G channel latest frame" class="camera-img" id="bgr-img-g-2"/>
+<div class="camera-meta" id="bgr-meta-g-2">—</div>
+</div>
+</div>
+<div class="bgr-cell">
+<div class="bgr-label">R</div>
+<div class="camera-frame">
+<img alt="R channel latest frame" class="camera-img" id="bgr-img-r-2"/>
+<div class="camera-meta" id="bgr-meta-r-2">—</div>
+</div>
+</div>
+</div>
+<div class="hint" style="margin-top:10px;">轮询最新帧（不保存）：<code>/api/v1/camera/{b|g|r}/latest.jpg</code></div>
+</section>
+</section>
+<!-- Quicklook -->
+<section class="tab-panel" data-tab-panel="quicklook">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">数据快显 / Quicklook (占位)</div>
+<div class="panel-kicker">本 Sprint 不实现 FITS 写入/QC；仅占位</div>
+</div>
+<div class="panel-actions">
+<span class="pill-todo">TODO：quicklook API</span>
+</div>
+</div>
+<ul class="todo-list">
+<li>最新帧/最新谱图缩略图（占位）</li>
+<li>下载链接/路径（占位）</li>
+<li>快速 QC 指标（占位）</li>
+</ul>
+</section>
+</section>
+<!-- Logs -->
+<section class="tab-panel" data-tab-panel="logs">
+<section class="panel">
+<div class="panel-header">
+<div>
+<div class="panel-title">日志 / Logs</div>
+<div class="panel-kicker">前端内存日志（200条）+ 一键复制；后续可落盘或接数据库</div>
+</div>
+<div class="panel-actions">
+<button class="btn btn-sm" id="logs-copy-btn" type="button">复制日志</button>
+<button class="btn btn-sm" id="logs-clear-btn" type="button">清空</button>
+</div>
+</div>
+<section class="log-panel">
+<div class="log-header">
+<span>Event Log</span>
+<span id="log-count">0 / 200</span>
+</div>
+<ul class="log-list" id="log-list-full"></ul>
+</section>
+</section>
+</section>
+</main>
+</div>
+</div>
+<script>
     // ===== Constants =====
     const SLIT_SCALE_UM_PER_ARCSEC = 128.34;  // from P0: 128.34 um/arcsec
 
-    // Observatory longitude (east positive), deg
-    const OBS_LONGITUDE_DEG = 121.60424;
+    // Runtime site settings (editable in UI)
+    let site = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
+
+    // Observatory longitude (east positive), deg (legacy default; unused once SITE is enabled)
+    // const OBS_LONGITUDE_DEG = 121.60424;
+
+    const SITE_DEFAULT = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
 
     // Polling
     const POLL_MIN_MS = 1000;
     const POLL_MAX_MS = 10000;
     const FETCH_TIMEOUT_MS = 5000;
 
+    // Camera polling (latest frame, no-save)
+    const CAM_POLL_MS = 900;
+    const CAM_FETCH_TIMEOUT_MS = 6000;
+
+
+    // Local UI fallback image (served from ui/assets/latest.jpg)
+    const UI_LATEST_FALLBACK_REL = "assets/latest.jpg";
+
+
     // Storage
     const LS_API_BASE = "justls_api_base_v1";
+    const LS_SITE = "justls_site_v1";
+    const LS_THEME = "justls_theme_v1";
+    const LS_THEME_LEGACY = "justls_theme";
+
+    // ===== Time baseline (UTC first) =====
+    // If backend provides meta.timestamp_utc (ISO8601), we compute:
+    //   timeOffsetMs = serverUtcMs - Date.now()
+    // All displayed time fields use nowRef = new Date(Date.now() + timeOffsetMs)
+    let timeOffsetMs = 0;
+    let lastServerTimeSyncAt = null;
+
+    function getNowRef() {
+      return new Date(Date.now() + timeOffsetMs);
+    }
+
+    function syncTimeFromMeta(meta) {
+      const ts = meta && meta.timestamp_utc ? String(meta.timestamp_utc) : "";
+      if (!ts) return false;
+
+      const ms = Date.parse(ts);
+      if (!Number.isFinite(ms)) return false;
+
+      timeOffsetMs = ms - Date.now();
+      lastServerTimeSyncAt = new Date();
+      // Force immediate refresh of all time-derived fields
+      updateClock(true);
+      return true;
+    }
 
     // ===== DOM =====
     const apiBaseInput = document.getElementById("api-base-input");
@@ -1130,15 +1611,37 @@
     const statusFreshness = document.getElementById("status-freshness");
 
     const chipSlit = document.getElementById("chip-slit");
-    const chipGrating = document.getElementById("chip-grating");
+    const chipSlitAngle = document.getElementById("chip-slit-angle");
     const chipLamp = document.getElementById("chip-lamp");
     const chipTemp = document.getElementById("chip-temp");
     const chipSource = document.getElementById("chip-source");
     const chipServerUtc = document.getElementById("chip-server-utc");
 
+    const slitcamPill = document.getElementById("slitcam-pill");
+    const bgrPill = document.getElementById("bgr-pill");
+
+    const slitcamImg = document.getElementById("slitcam-img");
+    const slitcamMeta = document.getElementById("slitcam-meta");
+    const slitcamImg2 = document.getElementById("slitcam-img-2");
+    const slitcamMeta2 = document.getElementById("slitcam-meta-2");
+
+    const bgrImgB = document.getElementById("bgr-img-b");
+    const bgrImgG = document.getElementById("bgr-img-g");
+    const bgrImgR = document.getElementById("bgr-img-r");
+    const bgrMetaB = document.getElementById("bgr-meta-b");
+    const bgrMetaG = document.getElementById("bgr-meta-g");
+    const bgrMetaR = document.getElementById("bgr-meta-r");
+
+    const bgrImgB2 = document.getElementById("bgr-img-b-2");
+    const bgrImgG2 = document.getElementById("bgr-img-g-2");
+    const bgrImgR2 = document.getElementById("bgr-img-r-2");
+    const bgrMetaB2 = document.getElementById("bgr-meta-b-2");
+    const bgrMetaG2 = document.getElementById("bgr-meta-g-2");
+    const bgrMetaR2 = document.getElementById("bgr-meta-r-2");
+
+
     const kvSlitUm = document.getElementById("kv-slit-um");
     const kvSlitArcsec = document.getElementById("kv-slit-arcsec");
-    const kvGrating = document.getElementById("kv-grating");
     const kvLamp = document.getElementById("kv-lamp");
     const kvTemp = document.getElementById("kv-temp");
 
@@ -1169,8 +1672,8 @@
     const slitUnit = document.getElementById("slit-unit");
     const slitSubmitBtn = document.getElementById("slit-submit-btn");
 
-    const gratingForm = document.getElementById("grating-form");
-    const gratingSubmitBtn = document.getElementById("grating-submit-btn");
+    const slitAngleForm = document.getElementById("slit-angle-form");
+    const slitAngleSubmitBtn = document.getElementById("slit-angle-submit-btn");
 
     const lampForm = document.getElementById("lamp-form");
     const lampSubmitBtn = document.getElementById("lamp-submit-btn");
@@ -1185,6 +1688,90 @@
     const timeLocalSpan = document.getElementById("time-local");
     const timeUtcSpan = document.getElementById("time-utc");
     const timeLstSpan = document.getElementById("time-lst");
+    const timeDateSpan = document.getElementById("time-date");
+    const timeEpochSpan = document.getElementById("time-epoch");
+    const timeJdSpan = document.getElementById("time-jd");
+    const timeMjdSpan = document.getElementById("time-mjd");
+    const timeDawnSpan = document.getElementById("time-dawn");
+    const timeDuskSpan = document.getElementById("time-dusk");
+
+    const siteLatInput = document.getElementById("site-lat");
+    const siteLonInput = document.getElementById("site-lon");
+    const siteAltInput = document.getElementById("site-alt");
+    const siteSaveBtn = document.getElementById("site-save");
+    const siteResetBtn = document.getElementById("site-reset");
+
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeText = document.getElementById("theme-text");
+
+    const opsList = document.getElementById("ops-list");
+    const opsHint = document.getElementById("ops-hint");
+
+
+    // ===== Operator View (safe, non-blocking) =====
+    function renderOperatorStatus(state, _meta) { // _meta reserved for future use (currently unused)
+      if (!opsList || !opsHint) return;
+
+      const items = [];
+      const api = (apiBase || "").trim() || "(not set)";
+
+      if (connectionOk) {
+        const rtt = (typeof lastRttMs === 'number') ? `${Math.round(lastRttMs)}ms` : "—";
+        items.push(`连接：已连接（RTT ${rtt}）`);
+      } else {
+        items.push(`连接：离线/异常（检查后端与 API 地址）`);
+      }
+      items.push(`API：${api}`);
+
+      if (lastCapabilities) {
+        const enabled = Object.entries(lastCapabilities)
+          .filter(([k, v]) => !!v)
+          .map(([k]) => k)
+          .sort();
+        items.push(`capabilities：${enabled.length ? enabled.join(", ") : "(none)"}`);
+      } else {
+        items.push('capabilities：未就绪（等待 /api/v1/status/full）');
+      }
+
+      if (state && typeof state === 'object') {
+        const slit = (state.slit_width_um != null) ? `${state.slit_width_um} μm` : '—';
+        const ang = (state.slit_angle_deg != null) ? `${state.slit_angle_deg}°` : '—';
+        const lamp = (state.lamp_on != null) ? (state.lamp_on ? 'ON' : 'OFF') : '—';
+        items.push(`当前：slit ${slit} · angle ${ang} · lamp ${lamp}`);
+      }
+
+      const canSlit = !!(lastCapabilities && lastCapabilities.slit);
+      const canAngle = !!(lastCapabilities && lastCapabilities.slit_angle);
+      const canLamp = !!(lastCapabilities && (lastCapabilities.calib_lamps || lastCapabilities.lamp));
+
+      if (!connectionOk) {
+        opsHint.textContent = '提示：确认 uvicorn 已启动；检查浏览器地址栏与 API 地址是否一致；必要时查看 Event Log。';
+      } else if (!lastCapabilities) {
+        opsHint.textContent = '提示：后端已通；等待 capabilities 刷新完成后再进行操作。';
+      } else if (canSlit || canAngle || canLamp) {
+        const steps = [];
+        if (canSlit) steps.push('① 设狭缝');
+        if (canAngle) steps.push('② 设角度');
+        if (canLamp) steps.push('③ 开/关灯');
+        opsHint.textContent = '建议流程：' + steps.join(' → ') + '（异常时复制 Event Log 反馈）。';
+      } else {
+        opsHint.textContent = '提示：capabilities 均为 N/A，本页面处于占位/演示模式。';
+      }
+
+      opsList.innerHTML = '';
+      for (const t of items) {
+        const li = document.createElement('li');
+        li.className = 'ops-item';
+        li.textContent = t;
+        opsList.appendChild(li);
+      }
+    }
+
+    function renderOperatorView() {
+      try {
+        renderOperatorStatus(lastState, lastMeta);
+      } catch (e) { /* do not crash UI */ }
+    }
 
     // Tabs
     const tabs = document.querySelectorAll(".tab");
@@ -1194,6 +1781,8 @@
     let apiBase = "";
     let pollTimer = null;
     let pollDelayMs = POLL_MIN_MS;
+
+    let connectionOk = false;
 
     let lastOkAt = null;
     let lastRttMs = null;
@@ -1328,15 +1917,204 @@
       return fmtHMS(hh, mm, ss);
     }
 
-    function updateClock() {
-      const now = new Date();
+    // ===== Theme (Night/Day) =====
+    function applyTheme(mode) {
+      const m = (mode === 'light') ? 'light' : 'dark';
+      const root = document.documentElement;
+
+      root.classList.toggle('theme-light', m === 'light');
+      root.classList.toggle('theme-dark', m !== 'light');
+
+      if (themeToggle) themeToggle.checked = (m === 'light');
+      if (themeText) themeText.textContent = (m === 'light') ? '白天' : '夜间';
+
+      // Persist with unified key; migrate legacy best-effort
+      try {
+        localStorage.setItem(LS_THEME, m);
+        if (localStorage.getItem(LS_THEME_LEGACY) != null) localStorage.removeItem(LS_THEME_LEGACY);
+      } catch (e) { /* ignore */ }
+    }
+
+    function loadTheme() {
+      let mode = null;
+      try { mode = localStorage.getItem(LS_THEME) || localStorage.getItem(LS_THEME_LEGACY); } catch {}
+
+      if (mode !== "light" && mode !== "dark") {
+        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+        mode = prefersLight ? "light" : "dark";
+      }
+
+      applyTheme(mode);
+    }
+
+    // ===== Site (lat/lon/alt) =====
+    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+    function readNumberOrDefault(inputEl, defaultValue) {
+      if (!inputEl) return defaultValue;
+      const s = String(inputEl.value ?? "").trim();
+      if (s === "") return defaultValue;
+      const v = Number(s);
+      return Number.isFinite(v) ? v : defaultValue;
+    }
+
+    function renderSiteInputs() {
+      if (siteLatInput) siteLatInput.value = String(site.lat_deg);
+      if (siteLonInput) siteLonInput.value = String(site.lon_deg);
+      if (siteAltInput) siteAltInput.value = String(site.alt_m);
+    }
+
+    function loadSite() {
+      let s = null;
+      try { s = localStorage.getItem(LS_SITE); } catch {}
+      if (s) {
+        try {
+          const obj = JSON.parse(s);
+          const lat = Number(obj.lat_deg);
+          const lon = Number(obj.lon_deg);
+          const alt = Number(obj.alt_m);
+          if (Number.isFinite(lat)) site.lat_deg = clamp(lat, -90, 90);
+          if (Number.isFinite(lon)) site.lon_deg = clamp(lon, -180, 180);
+          if (Number.isFinite(alt)) site.alt_m = clamp(alt, -500, 10000);
+        } catch {}
+      }
+      renderSiteInputs();
+    }
+
+    function saveSiteFromInputs() {
+      const lat = clamp(readNumberOrDefault(siteLatInput, SITE_DEFAULT.lat_deg), -90, 90);
+      const lon = clamp(readNumberOrDefault(siteLonInput, SITE_DEFAULT.lon_deg), -180, 180);
+      const alt = clamp(readNumberOrDefault(siteAltInput, SITE_DEFAULT.alt_m), -500, 10000);
+
+      site.lat_deg = lat;
+      site.lon_deg = lon;
+      site.alt_m = alt;
+
+      renderSiteInputs();
+      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
+
+      // Time-dependent fields (LST / dawn / dusk) use site.lon/lat; refresh immediately
+      updateClock(true);
+
+      pushLog("ok", `SITE saved: lat=${lat.toFixed(4)} lon=${lon.toFixed(4)} alt=${Math.round(alt)}m`);
+    }
+
+    function resetSiteDefault() {
+      site = { ...SITE_DEFAULT };
+      renderSiteInputs();
+      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
+      updateClock(true);
+    }
+
+    // ===== Time extras (Epoch/JD/MJD) =====
+    function isLeapYear(y){ return (y%4===0 && y%100!==0) || (y%400===0); }
+    function dayOfYearLocal(d){
+      const start = new Date(d.getFullYear(),0,1);
+      return Math.floor((d - start)/86400000) + 1;
+    }
+    function decimalYearLocal(d){
+      const y = d.getFullYear();
+      const days = isLeapYear(y) ? 366 : 365;
+      const doy = dayOfYearLocal(d);
+      const fracDay = (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds())/86400;
+      return y + ((doy-1) + fracDay)/days;
+    }
+    function julianDateFromMs(ms){
+      // Unix epoch corresponds to JD 2440587.5
+      return ms/86400000 + 2440587.5;
+    }
+
+    // ===== Astronomical twilight (NOAA-style sunrise equation; zenith 108°) =====
+    function deg2rad(x){ return x*Math.PI/180; }
+    function rad2deg(x){ return x*180/Math.PI; }
+    function normalizeDeg(x){ x = x % 360; return x < 0 ? x + 360 : x; }
+    function normalizeHours(x){ x = x % 24; return x < 0 ? x + 24 : x; }
+
+    function sunriseEquationUtcMinutes(dateLocalMidnight, latDeg, lonDeg, zenithDeg, isSunrise){
+      const N = dayOfYearLocal(dateLocalMidnight);
+      const lngHour = lonDeg / 15.0;
+
+      const t = N + ((isSunrise ? 6 : 18) - lngHour) / 24.0;
+      const M = (0.9856 * t) - 3.289;
+      let L = M + (1.916 * Math.sin(deg2rad(M))) + (0.020 * Math.sin(deg2rad(2*M))) + 282.634;
+      L = normalizeDeg(L);
+
+      let RA = rad2deg(Math.atan(0.91764 * Math.tan(deg2rad(L))));
+      RA = normalizeDeg(RA);
+      const Lquadrant  = Math.floor(L/90) * 90;
+      const RAquadrant = Math.floor(RA/90) * 90;
+      RA = RA + (Lquadrant - RAquadrant);
+      RA = RA / 15.0;
+
+      const sinDec = 0.39782 * Math.sin(deg2rad(L));
+      const cosDec = Math.cos(Math.asin(sinDec));
+
+      const cosH = (Math.cos(deg2rad(zenithDeg)) - (sinDec * Math.sin(deg2rad(latDeg)))) / (cosDec * Math.cos(deg2rad(latDeg)));
+      if (cosH > 1) return NaN;
+      if (cosH < -1) return NaN;
+
+      let H = isSunrise ? (360 - rad2deg(Math.acos(cosH))) : rad2deg(Math.acos(cosH));
+      H = H / 15.0;
+
+      const T = H + RA - (0.06571 * t) - 6.622;
+      let UT = T - lngHour; // hours
+      UT = normalizeHours(UT);
+
+      return UT * 60.0;
+    }
+
+    function minutesUtcToLocalHM(dateLocalMidnight, utcMinutes){
+      if (!Number.isFinite(utcMinutes)) return "N/A";
+      const baseUtc = new Date(Date.UTC(dateLocalMidnight.getFullYear(), dateLocalMidnight.getMonth(), dateLocalMidnight.getDate(), 0, 0, 0));
+      const dt = new Date(baseUtc.getTime() + utcMinutes*60000);
+      return fmtHMS(dt.getHours(), dt.getMinutes(), 0).slice(0,5);
+    }
+
+    let _lastTwilightKey = null;
+    function updateTwilight(nowRef, force=false){
+      const now = nowRef || getNowRef();
+      const key = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+      if (!force && _lastTwilightKey === key) return;
+      _lastTwilightKey = key;
+
+      const lat = Number(site.lat_deg);
+      const lon = Number(site.lon_deg);
+      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        if (timeDawnSpan) timeDawnSpan.textContent = "N/A";
+        if (timeDuskSpan) timeDuskSpan.textContent = "N/A";
+        return;
+      }
+
+      const zenithAstro = 108.0; // 90 + 18
+      const dawnMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, true);
+      const duskMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, false);
+
+      if (timeDawnSpan) timeDawnSpan.textContent = minutesUtcToLocalHM(localMidnight, dawnMin);
+      if (timeDuskSpan) timeDuskSpan.textContent = minutesUtcToLocalHM(localMidnight, duskMin);
+    }
+
+    function updateClock(force=false) {
+      const now = getNowRef();
+
       if (timeLocalSpan) timeLocalSpan.textContent = fmtHMS(now.getHours(), now.getMinutes(), now.getSeconds());
       if (timeUtcSpan) timeUtcSpan.textContent = fmtHMS(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, OBS_LONGITUDE_DEG));
+      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, site.lon_deg));
+
+      if (timeDateSpan) timeDateSpan.textContent = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+      if (timeEpochSpan) timeEpochSpan.textContent = decimalYearLocal(now).toFixed(5);
+
+      const jd = julianDateFromMs(now.getTime());
+      if (timeJdSpan) timeJdSpan.textContent = jd.toFixed(5);
+      if (timeMjdSpan) timeMjdSpan.textContent = (jd - 2400000.5).toFixed(5);
+
+      updateTwilight(now, force);
     }
 
     // ===== Connection UI =====
     function setConnection(ok) {
+      connectionOk = !!ok;
       if (ok) {
         connectionDot.classList.remove("badge-dot--error");
         connectionDot.classList.add("badge-dot--ok");
@@ -1346,6 +2124,7 @@
         connectionDot.classList.add("badge-dot--error");
         connectionText.textContent = "异常/离线";
       }
+      renderOperatorView();
     }
 
     function updateConnMetrics() {
@@ -1357,7 +2136,13 @@
 
     // ===== Fetch helper (timeout + ok check) =====
     async function apiRequest(path, { method = "GET", json = null } = {}) {
-      const url = `${apiBase}${path}`;
+      let url = "";
+      try {
+        url = new URL(path, apiBase).toString();
+      } catch {
+        url = `${apiBase}${path}`;
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -1409,13 +2194,12 @@
 
       const flags = cap || {};
       const map = {
-        "狭缝 (slit)": { key: "slit", affects: ["slit"], desc: "狭缝宽度设置与回读" },
-        "光栅 (grating)": { key: "grating", affects: ["overview"], desc: "光栅选择/回读" },
-        "定标灯 (calib_lamps)": { key: "calib_lamps", affects: ["cal"], desc: "主定标灯开关（多光源后续扩展）" },
-        "环境传感 (env_sensors)": { key: "env_sensors", affects: ["env"], desc: "温湿度/风/Seeing 等（本 Sprint 占位）" },
-        "狭缝监测相机": { key: "slit_monitor_camera", affects: ["slit"], desc: "狭缝监测相机（本 Sprint 占位）" },
-        "偏置导星": { key: "guider", affects: ["guiding"], desc: "导星相机/闭环（本 Sprint 占位）" },
-        "三通道相机 B/G/R": { key: "science_channels_bgr", affects: ["cameras"], desc: "曝光/快门控制（本 Sprint 占位）" },
+        "狭缝 (slit)": { key: "slit", desc: "狭缝宽度设置与回读" },
+        "狭缝方向 (slit_angle)": { key: "slit_angle", desc: "狭缝方向/角度设置与回读（新增）" },
+                "定标灯 (calib_lamps)": { key: "calib_lamps", desc: "主定标灯开关（多光源后续扩展）" },
+                "狭缝监测相机": { key: "slit_monitor_camera", desc: "狭缝监测相机（本 Sprint 占位）" },
+        "偏置导星": { key: "guider", desc: "导星相机/闭环（本 Sprint 占位）" },
+        "三通道相机 B/G/R": { key: "science_channels_bgr", desc: "曝光/快门控制（本 Sprint 占位）" },
       };
 
       if (capTableBody) {
@@ -1426,10 +2210,8 @@
         }
       }
 
-      // Disable tabs if cap is false AND the whole tab is "future"
       const disableByTab = {
-        env: !flags.env_sensors,
-        guiding: !flags.guider,
+                guiding: !flags.guider,
         cameras: !flags.science_channels_bgr,
       };
 
@@ -1441,62 +2223,197 @@
         }
       });
 
-      if (envPill) envPill.textContent = flags.env_sensors ? "env_sensors: enabled" : "env_sensors: disabled";
       if (slitCapPill) slitCapPill.textContent = `cap: slit=${!!flags.slit}`;
       if (calCapPill) calCapPill.textContent = `cap: calib_lamps=${!!flags.calib_lamps}`;
       if (guidingCapPill) guidingCapPill.textContent = `cap: guider=${!!flags.guider}`;
       if (camerasCapPill) camerasCapPill.textContent = `cap: science_channels_bgr=${!!flags.science_channels_bgr}`;
+      renderOperatorView();
     }
 
     // ===== State rendering =====
-    function umToArcsec(um) {
-      if (!Number.isFinite(um)) return null;
-      return um / SLIT_SCALE_UM_PER_ARCSEC;
-    }
+    // Unused helpers (kept for future; safe to delete later if you want)
+    // function umToArcsec(um) { if (!Number.isFinite(um)) return null; return um / SLIT_SCALE_UM_PER_ARCSEC; }
+    // function fmtBool(b) { return b ? "true" : "false"; }
 
-    function fmtBool(b) { return b ? "true" : "false"; }
+    function deriveViewModel(state, meta, capabilities) {
+      const st = state || {};
+      const mt = meta || {};
+
+      const slitUm = Number(st.slit_width_um);
+      const slitUmOk = Number.isFinite(slitUm);
+      const slitArc = slitUmOk ? (slitUm / SLIT_SCALE_UM_PER_ARCSEC) : NaN;
+      const slitArcOk = Number.isFinite(slitArc);
+
+      const slitAngleDeg = Number(st.slit_angle_deg);
+      const slitAngleOk = Number.isFinite(slitAngleDeg);
+      const lampOn = !!st.lamp_on;
+
+      const tempC = Number(st.temperature_c);
+      const tempOk = Number.isFinite(tempC);
+
+      const source = (mt.run_mode || mt.hal) ? `${mt.run_mode || "—"} / ${mt.hal || "—"}` : "—";
+      const serverUtc = mt.timestamp_utc ? mt.timestamp_utc : "—";
+
+      const chipSlitText = slitUmOk
+        ? `${slitUm.toFixed(1)} μm  (${slitArcOk ? `${slitArc.toFixed(2)}"` : "—"})`
+        : "—";
+
+      return {
+        chipSlitText,
+        chipSlitAngleText: slitAngleOk ? `${slitAngleDeg.toFixed(0)}°` : "—",
+        chipLampText: lampOn ? "ON" : "OFF",
+        chipTempText: tempOk ? `${tempC.toFixed(1)} ℃` : "—",
+        chipSourceText: source,
+        chipServerUtcText: serverUtc,
+
+        pillRunmodeText: `RUN_MODE ${mt.run_mode ? mt.run_mode : "—"}`,
+        pillHalText: `HAL ${mt.hal ? mt.hal : "—"}`,
+
+        kvSlitUmText: slitUmOk ? `${slitUm.toFixed(3)} μm` : "—",
+        kvSlitArcsecText: slitArcOk ? `${slitArc.toFixed(4)} arcsec` : "—",
+        kvLampText: lampOn ? "true" : "false",
+        kvTempText: tempOk ? `${tempC.toFixed(3)} ℃` : "—",
+
+        slitReadbackText: slitUmOk ? `${slitUm.toFixed(1)} μm` : "—",
+        slitReadbackHintText: slitArcOk ? `≈ ${slitArc.toFixed(2)} arcsec` : "—",
+
+        rawText: JSON.stringify({ state: st, meta: mt, capabilities }, null, 2),
+      };
+    }
 
     function renderState(state, meta) {
       lastState = state || null;
       lastMeta = meta || null;
-
       if (!state) return;
 
-      const slitUm = state.slit_width_um;
-      const slitArc = umToArcsec(slitUm);
+      // Sync time baseline from backend UTC if available (best-effort, non-blocking)
+      syncTimeFromMeta(meta);
 
-      if (chipSlit) {
-        const a = slitArc == null ? "—" : `${slitArc.toFixed(2)}"`;
-        chipSlit.textContent = `${slitUm.toFixed(1)} μm  (${a})`;
-      }
-      if (chipGrating) chipGrating.textContent = state.grating ?? "—";
-      if (chipLamp) chipLamp.textContent = state.lamp_on ? "ON" : "OFF";
-      if (chipTemp) chipTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃`;
+      const vm = deriveViewModel(state, meta, lastCapabilities);
 
-      const src = meta && (meta.run_mode || meta.hal) ? `${meta.run_mode || "—"} / ${meta.hal || "—"}` : "—";
-      if (chipSource) chipSource.textContent = src;
+      if (chipSlit) chipSlit.textContent = vm.chipSlitText;
+      if (chipSlitAngle) chipSlitAngle.textContent = vm.chipSlitAngleText;
+      if (chipLamp) chipLamp.textContent = vm.chipLampText;
+      if (chipTemp) chipTemp.textContent = vm.chipTempText;
+      if (chipSource) chipSource.textContent = vm.chipSourceText;
+      if (chipServerUtc) chipServerUtc.textContent = vm.chipServerUtcText;
 
-      if (chipServerUtc) chipServerUtc.textContent = (meta && meta.timestamp_utc) ? meta.timestamp_utc : "—";
+      if (pillRunmode) pillRunmode.textContent = vm.pillRunmodeText;
+      if (pillHal) pillHal.textContent = vm.pillHalText;
 
-      if (pillRunmode) pillRunmode.textContent = `RUN_MODE ${meta && meta.run_mode ? meta.run_mode : "—"}`;
-      if (pillHal) pillHal.textContent = `HAL ${meta && meta.hal ? meta.hal : "—"}`;
+      if (kvSlitUm) kvSlitUm.textContent = vm.kvSlitUmText;
+      if (kvSlitArcsec) kvSlitArcsec.textContent = vm.kvSlitArcsecText;
+      if (kvLamp) kvLamp.textContent = vm.kvLampText;
+      if (kvTemp) kvTemp.textContent = vm.kvTempText;
 
-      if (kvSlitUm) kvSlitUm.textContent = `${slitUm.toFixed(3)} μm`;
-      if (kvSlitArcsec) kvSlitArcsec.textContent = slitArc == null ? "—" : `${slitArc.toFixed(4)} arcsec`;
-      if (kvGrating) kvGrating.textContent = String(state.grating ?? "—");
-      if (kvLamp) kvLamp.textContent = fmtBool(!!state.lamp_on);
-      if (kvTemp) kvTemp.textContent = `${(state.temperature_c ?? 0).toFixed(3)} ℃`;
 
-      if (envTemp) envTemp.textContent = `${(state.temperature_c ?? 0).toFixed(1)} ℃（暂用 instrument temperature）`;
+      if (slitReadback) slitReadback.textContent = vm.slitReadbackText;
+      if (slitReadbackHint) slitReadbackHint.textContent = vm.slitReadbackHintText;
 
-      if (slitReadback) slitReadback.textContent = `${slitUm.toFixed(1)} μm`;
-      if (slitReadbackHint) slitReadbackHint.textContent = slitArc == null ? "—" : `≈ ${slitArc.toFixed(2)} arcsec`;
+      if (statusRawPre) statusRawPre.textContent = vm.rawText;
 
-      if (statusRawPre) {
-        const dump = { state, meta, capabilities: lastCapabilities };
-        statusRawPre.textContent = JSON.stringify(dump, null, 2);
+      renderOperatorStatus(state, meta);
+    }
+
+
+    // ===== Camera polling (latest frame, no-save) =====
+    let camTimer = null;
+
+    function uiAssetUrl(relPath) {
+      try { return new URL(relPath, window.location.href).toString(); } catch { return relPath; }
+    }
+
+    function setFallbackImages(imgEls) {
+      const imgs = (imgEls || []).filter(Boolean);
+      const fb = uiAssetUrl(UI_LATEST_FALLBACK_REL) + (UI_LATEST_FALLBACK_REL.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+      imgs.forEach((img) => {
+        try {
+          const old = img.dataset.objurl || "";
+          if (old && String(old).startsWith("blob:")) URL.revokeObjectURL(old);
+        } catch {}
+        try { delete img.dataset.objurl; } catch {}
+        img.src = fb;
+      });
+    }
+
+
+    function abortableFetch(url, timeoutMs) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), timeoutMs);
+      return fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(t));
+    }
+
+    async function updateCamera(role, urlPath, imgEls, metaEls, pillEl) {
+      const imgs = (imgEls || []).filter(Boolean);
+      const metas = (metaEls || []).filter(Boolean);
+      if (imgs.length === 0 && metas.length === 0 && !pillEl) return;
+
+      const url = apiBase + urlPath + (urlPath.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+      const t0 = performance.now();
+      try {
+        const resp = await abortableFetch(url, CAM_FETCH_TIMEOUT_MS);
+        const ms = Math.round(performance.now() - t0);
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+
+        imgs.forEach((img) => {
+          const old = img.dataset.objurl || "";
+          img.onload = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
+          img.onerror = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
+          img.src = objUrl;
+          img.dataset.objurl = objUrl;
+        });
+
+        const ts = fmtTime(new Date());
+        metas.forEach((m) => m.textContent = `Last: ${ts}  (${ms} ms)`);
+        if (pillEl) pillEl.textContent = `${role}: OK`;
+      } catch (e) {
+        const ts = fmtTime(new Date());
+        const emsg = String(e && e.message ? e.message : e);
+        metas.forEach((m) => m.textContent = `DEMO @ ${ts}: ${emsg}`);
+        if (pillEl) pillEl.textContent = `${role}: DEMO`;
+        setFallbackImages(imgs);
       }
     }
+
+    function stopCameraPolling() {
+      if (camTimer) clearInterval(camTimer);
+      camTimer = null;
+    }
+
+    function startCameraPolling() {
+      stopCameraPolling();
+      camTimer = setInterval(async () => {
+        if (document.visibilityState !== "visible") return;
+
+        await updateCamera("slitcam", "/api/v1/camera/slit/latest.jpg",
+          [slitcamImg, slitcamImg2],
+          [slitcamMeta, slitcamMeta2],
+          slitcamPill);
+
+        // B/G/R
+        await updateCamera("B", "/api/v1/camera/b/latest.jpg",
+          [bgrImgB, bgrImgB2],
+          [bgrMetaB, bgrMetaB2],
+          null);
+        await updateCamera("G", "/api/v1/camera/g/latest.jpg",
+          [bgrImgG, bgrImgG2],
+          [bgrMetaG, bgrMetaG2],
+          null);
+        await updateCamera("R", "/api/v1/camera/r/latest.jpg",
+          [bgrImgR, bgrImgR2],
+          [bgrMetaR, bgrMetaR2],
+          null);
+
+        if (bgrPill) bgrPill.textContent = "bgr: polling";
+      }, CAM_POLL_MS);
+    }
+
 
     // ===== Polling =====
     function stopPolling() {
@@ -1513,9 +2430,12 @@
 
     async function pollOnce() {
       if (document.visibilityState !== "visible") {
+        stopCameraPolling();
         schedulePoll(POLL_MAX_MS);
         return;
       }
+
+      startCameraPolling();
 
       try {
         const data = await apiRequest("/api/v1/status/full", { method: "GET" });
@@ -1540,7 +2460,6 @@
         pushLog("ok", `GET /api/v1/status/full (${Math.round(lastRttMs)}ms)`);
         schedulePoll(POLL_MIN_MS);
       } catch (e1) {
-        // fallback: /api/v1/status
         try {
           const st = await apiRequest("/api/v1/status", { method: "GET" });
 
@@ -1598,13 +2517,17 @@
       schedulePoll(POLL_MIN_MS);
     }
 
-    async function cmdSetGrating(name) {
-      pushLog("info", `UI→API POST /api/v1/grating name=${name}`);
-      const data = await apiRequest("/api/v1/grating", { method: "POST", json: { name } });
-      pushLog("ok", `API→UI grating applied (${Math.round(lastRttMs)}ms)`);
+    async function cmdSetSlitAngle(angleDeg) {
+      if (!(angleDeg >= -90 && angleDeg <= 90)) {
+        throw new Error(`angle_deg 超出范围：${angleDeg}（要求 -90 ≤ x ≤ 90）`);
+      }
+      pushLog("info", `UI→API POST /api/v1/slit_angle angle_deg=${angleDeg}`);
+      const data = await apiRequest("/api/v1/slit_angle", { method: "POST", json: { angle_deg: angleDeg } });
+      pushLog("ok", `API→UI slit_angle applied (${Math.round(lastRttMs)}ms)`);
       renderState(data, lastMeta || {});
       schedulePoll(POLL_MIN_MS);
     }
+
 
     async function cmdSetLamp(on) {
       pushLog("info", `UI→API POST /api/v1/lamp on=${on}`);
@@ -1616,7 +2539,20 @@
 
     // ===== API base handling =====
     function normalizeBase(s) {
-      const t = (s || "").trim().replace(/\/+$/, "");
+      let t = (s || "").trim();
+      if (!t) return window.location.origin;
+
+      if (!/^https?:\/\//i.test(t)) {
+        if (t.startsWith("//")) {
+          t = window.location.protocol + t;
+        } else if (t.startsWith("/")) {
+          t = window.location.origin + t;
+        } else {
+          t = window.location.protocol + "//" + t;
+        }
+      }
+
+      t = t.replace(/\/+$/, "");
       return t;
     }
 
@@ -1624,7 +2560,7 @@
       apiBase = normalizeBase(nextBase);
       apiBaseInput.value = apiBase;
       pushLog("info", `API base set to ${apiBase}`);
-      // force reconnection
+
       lastOkAt = null;
       lastRttMs = null;
       failCount = 0;
@@ -1634,7 +2570,8 @@
     }
 
     function loadApiBase() {
-      const stored = localStorage.getItem(LS_API_BASE);
+      let stored = null;
+      try { stored = localStorage.getItem(LS_API_BASE); } catch {}
       const def = window.location.origin;
       setApiBase(stored ? stored : def);
     }
@@ -1651,12 +2588,12 @@
 
     apiBaseSaveBtn.addEventListener("click", () => {
       const v = normalizeBase(apiBaseInput.value);
-      localStorage.setItem(LS_API_BASE, v);
+      try { localStorage.setItem(LS_API_BASE, v); } catch {}
       setApiBase(v);
     });
 
     apiBaseResetBtn.addEventListener("click", () => {
-      localStorage.removeItem(LS_API_BASE);
+      try { localStorage.removeItem(LS_API_BASE); } catch {}
       setApiBase(window.location.origin);
     });
 
@@ -1692,17 +2629,17 @@
       });
     }
 
-    if (gratingForm) {
-      gratingForm.addEventListener("submit", async (evt) => {
+    if (slitAngleForm) {
+      slitAngleForm.addEventListener("submit", async (evt) => {
         evt.preventDefault();
-        setBusy(gratingSubmitBtn, true, "应用", "发送中...");
+        setBusy(slitAngleSubmitBtn, true, "应用", "发送中...");
         try {
-          const name = document.getElementById("grating-name").value;
-          await cmdSetGrating(name);
+          const angle = parseNumber("slit-angle-deg");
+          await cmdSetSlitAngle(angle);
         } catch (e) {
-          pushLog("error", `grating failed: ${String(e && e.message ? e.message : e)}`);
+          pushLog("error", `slit_angle failed: ${String(e && e.message ? e.message : e)}`);
         } finally {
-          setBusy(gratingSubmitBtn, false, "应用", "发送中...");
+          setBusy(slitAngleSubmitBtn, false, "应用", "发送中...");
         }
       });
     }
@@ -1737,7 +2674,6 @@
       });
     }
 
-    // Pause polling when hidden, resume when visible
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         pushLog("info", "page visible: resume polling");
@@ -1749,11 +2685,55 @@
     });
 
     // ===== Init =====
+    window.addEventListener("error", (e) => {
+      try { pushLog("error", `JS error: ${e && e.message ? e.message : e}`); } catch {}
+    });
+
+    window.addEventListener("unhandledrejection", (e) => {
+      try { pushLog("error", `Promise rejection: ${String(e && e.reason ? e.reason : e)}`); } catch {}
+    });
+
     window.addEventListener("load", () => {
       pushLog("info", "UI loaded");
-      loadApiBase();
 
-      updateClock();
+      // Theme: head script already applied theme class (FOUC fix).
+      // loadTheme() will sync toggle text/checked + ensure key migration.
+      loadTheme();
+
+      loadSite();
+      updateClock(true);
+
+      if (themeToggle) themeToggle.addEventListener("change", () => applyTheme(themeToggle.checked ? "light" : "dark"));
+      if (themeText) themeText.addEventListener("click", () => applyTheme(document.documentElement.classList.contains("theme-light") ? "dark" : "light"));
+      if (siteSaveBtn) siteSaveBtn.addEventListener("click", saveSiteFromInputs);
+      if (siteResetBtn) siteResetBtn.addEventListener("click", resetSiteDefault);
+
+      document.querySelectorAll("[data-slit-preset]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const val = btn.getAttribute("data-slit-preset");
+          const slitWidth = document.getElementById("slit-width");
+          const slitUnit = document.getElementById("slit-unit");
+          if (slitWidth) slitWidth.value = val;
+          if (slitUnit) slitUnit.value = "arcsec";
+        });
+      });
+
+
+      document.querySelectorAll("[data-angle-preset]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const val = btn.getAttribute("data-angle-preset");
+          const angleEl = document.getElementById("slit-angle-deg");
+          if (angleEl) angleEl.value = val;
+        });
+      });
+
+      loadApiBase();
+      renderOperatorView();
+
+      // Seed local fallback image so <img> always has a valid src (ui/assets/latest.jpg)
+      setFallbackImages([slitcamImg, slitcamImg2, bgrImgB, bgrImgG, bgrImgR, bgrImgB2, bgrImgG2, bgrImgR2]);
+
+      startCameraPolling();
       setInterval(updateClock, 1000);
     });
   </script>

@@ -9,7 +9,7 @@ This repository currently provides:
 - A **SimHAL** simulator enabling end-to-end operation without hardware
 - Static UI served by the backend at `/ui/` for zero-CORS local integration
 - A reproducible engineering pipeline: **demo script + pytest regression + GitHub Actions CI**
-- A maintenance sweep script (optional) to detect legacy endpoint references in docs
+- A maintenance sweep script (optional) to detect legacy endpoint references in code/docs
 
 ---
 
@@ -23,14 +23,18 @@ This repository currently provides:
 - **Sprint 1 (Reproducible + regression-safe)**
   - One-click demo script (`just-ls-ics-starter/scripts/demo_flow.ps1`) for E2E flow
   - Pytest regression suite + GitHub Actions CI on push/PR
-- **Sprint 2 (UI + simulator hardening + contract alignment)**
-  - UI upgraded for stable local integration (status polling, request feedback, operation logs)
+- **Sprint 2 (Contract alignment + simulator hardening)**
   - `/api/v1/status/full` stabilized; capabilities surfaced for UI/clients
   - SimHAL + subsystem boundary cleaned up for predictable behavior
-  - Docs/contract endpoint references unified to `/api/v1/*`
+  - Deprecated/legacy references removed; contracts unified to `/api/v1/*`
+- **Sprint 3 (UI overview refresh + camera placeholder integration)**
+  - UI upgraded for stable local operation (polling, request feedback, operation logs)
+  - Overview reworked into a “quad” layout (Quick control + SlitCam + B/G/R + Status)
+  - Camera panels support a **static placeholder** image at `ui/assets/latest.jpg`
+    - Used automatically when camera API is not available
 
 ### Next
-- **Sprint 3**: Packaging & distribution (training-friendly “double-click run” first; `.exe` later if needed)
+- **Sprint 4**: Packaging & distribution (training-friendly “double-click run” first; `.exe` later if needed)
 
 ---
 
@@ -39,6 +43,7 @@ This repository currently provides:
 - `just-ls-ics-starter/` — main Python package and runtime
   - `src/justls/ics/api.py` — FastAPI entry (serves API + UI)
   - `ui/` — static UI assets (served at `/ui/`)
+    - `assets/latest.jpg` — placeholder used by UI when camera endpoints are not implemented
   - `scripts/demo_flow.ps1` — one-click demo flow (PowerShell)
   - `tests/` — regression + optional stress tests
   - `docs/api/contract.md` — API contract (human-readable)
@@ -54,6 +59,7 @@ CI is pinned to Python 3.12.x. For best consistency, use Python 3.12.x locally a
 If you use conda:
 ```powershell
 conda activate dino
+```
 
 ### 1) Install (editable)
 From repository root:
@@ -82,12 +88,17 @@ The v0.1 contract is described in:
 - `just-ls-ics-starter/docs/api/contract.md`
 
 Canonical endpoints:
-- `GET /api/v1/status`  
-- `GET /api/v1/status/full`   
-- `GET /api/v1/capabilities` 
-- `POST /api/v1/slit body`   
-- `POST /api/v1/grating body`    
-- `POST /api/v1/lamp body`    
+- `GET /api/v1/status`
+- `GET /api/v1/status/full`
+- `GET /api/v1/capabilities`
+- `POST /api/v1/slit` (body: `{"width_um": ...}`)
+- `POST /api/v1/slit_angle` (body: `{"angle_deg": ...}`)
+- `POST /api/v1/lamp` (body: `{"on": true|false}`)
+
+Notes:
+- The UI includes camera panels. If camera latest-frame endpoints are not implemented/available, the UI falls back to `/ui/assets/latest.jpg`.
+
+---
 
 ## Demo (one-click)
 
@@ -98,10 +109,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo_flow.ps1
 ```
 
 The script performs:
-1) GET status  
-2) POST slit  
-3) POST lamp  
-4) POST grating  
+1) GET status
+2) POST slit
+3) POST slit_angle
+4) POST lamp
 5) GET status (final)
 
 ---
@@ -135,14 +146,6 @@ log_level=INFO
 ```
 
 When `telemetry_enabled=true`, the backend attempts to write instrument state telemetry; any telemetry write failure must not block API responses.
-
----
-
-## Roadmap (Sprint 2 focus)
-
-Sprint 2 will prioritize usability and realism, without introducing external simulators yet:
-- UI: connection status + request feedback + readable errors + operation log + refresh strategy
-- SimHAL: tighter parameter constraints + clearer grating selection behavior + (optional) fault injection hooks
 
 ---
 

@@ -18,7 +18,7 @@ class StateDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     slit_width_um: float = Field(..., ge=0)
-    grating: str
+    slit_angle_deg: float = Field(..., ge=-90, le=90)
     lamp_on: bool
     temperature_c: float
 
@@ -38,7 +38,6 @@ def status() -> StateDTO:
                     "temperature_c": s.temperature_c,
                     "lamp_on": int(s.lamp_on),
                 },
-                tags={"grating": s.grating},
             )
         except Exception:
             logger.debug("telemetry write failed", exc_info=True)

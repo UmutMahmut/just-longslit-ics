@@ -1,7 +1,5 @@
 from .calib_lamps import CalibLampsSubsystem
-from .env_sensors import EnvSensorsSubsystem
 from .fast_photometry import FastPhotometrySubsystem
-from .grating import GratingSubsystem
 from .guider import GuiderSubsystem
 from .rotator import RotatorSubsystem
 from .science_channels import ScienceChannelsSubsystem
@@ -12,9 +10,7 @@ from .system import SystemSubsystem
 __all__ = [
     "SystemSubsystem",
     "SlitSubsystem",
-    "GratingSubsystem",
     "CalibLampsSubsystem",
-    "EnvSensorsSubsystem",
     "RotatorSubsystem",
     "SlitMonitorCameraSubsystem",
     "GuiderSubsystem",

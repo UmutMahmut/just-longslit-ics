@@ -4,57 +4,53 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Invoke-JsonGet([string]$Path) {
-  return Invoke-RestMethod -Method Get -Uri "$BaseUrl$Path"
+function Invoke-Json {
+  param(
+    [Parameter(Mandatory=$true)][string]$Method,
+    [Parameter(Mandatory=$true)][string]$Path,
+    [object]$Body = $null
+  )
+
+  $uri = "$BaseUrl$Path"
+  Write-Host ""
+  Write-Host "==> $Method $uri" -ForegroundColor Cyan
+
+  if ($null -ne $Body) {
+    $json = $Body | ConvertTo-Json -Depth 10
+    Write-Host "Body: $json"
+    return Invoke-RestMethod -Method $Method -Uri $uri -ContentType "application/json" -Body $json
+  } else {
+    return Invoke-RestMethod -Method $Method -Uri $uri
+  }
 }
 
-function Invoke-JsonPost([string]$Path, [hashtable]$Body) {
-  $json = ($Body | ConvertTo-Json -Compress)
-  return Invoke-RestMethod -Method Post -Uri "$BaseUrl$Path" -ContentType "application/json" -Body $json
-}
-
-Write-Host "== JUST Long-Slit ICS Demo Flow =="
+Write-Host "JUST Long-Slit ICS demo flow (v0.1)" -ForegroundColor Green
 Write-Host "BaseUrl: $BaseUrl"
-Write-Host ""
 
 # 1) GET status
-Write-Host "[1] GET /api/v1/status"
-$st0 = Invoke-JsonGet "/api/v1/status"
-$st0 | ConvertTo-Json -Depth 5
-Write-Host ""
+$status1 = Invoke-Json -Method "GET" -Path "/api/v1/status"
+Write-Host "Status (initial):" -ForegroundColor Yellow
+$status1 | ConvertTo-Json -Depth 10
 
 # 2) POST slit
-$targetSlit = 200
-if ($st0.slit_width_um -lt 4900) { $targetSlit = [double]$st0.slit_width_um + 100 }
+$slit = Invoke-Json -Method "POST" -Path "/api/v1/slit" -Body @{ width_um = 200 }
+Write-Host "After slit:" -ForegroundColor Yellow
+$slit | ConvertTo-Json -Depth 10
 
-Write-Host "[2] POST /api/v1/slit  (width_um=$targetSlit)"
-$st1 = Invoke-JsonPost "/api/v1/slit" @{ width_um = $targetSlit }
-$st1 | ConvertTo-Json -Depth 5
-Write-Host ""
+# 3) POST slit_angle
+$angle = Invoke-Json -Method "POST" -Path "/api/v1/slit_angle" -Body @{ angle_deg = 0 }
+Write-Host "After slit_angle:" -ForegroundColor Yellow
+$angle | ConvertTo-Json -Depth 10
 
-# 3) POST lamp (toggle)
-$targetLamp = -not [bool]$st1.lamp_on
-Write-Host "[3] POST /api/v1/lamp  (on=$targetLamp)"
-$st2 = Invoke-JsonPost "/api/v1/lamp" @{ on = $targetLamp }
-$st2 | ConvertTo-Json -Depth 5
-Write-Host ""
+# 4) POST lamp
+$lamp = Invoke-Json -Method "POST" -Path "/api/v1/lamp" -Body @{ on = $true }
+Write-Host "After lamp:" -ForegroundColor Yellow
+$lamp | ConvertTo-Json -Depth 10
 
-# 4) POST grating (G1)
-Write-Host "[4] POST /api/v1/grating (name=G1)"
-$st3 = Invoke-JsonPost "/api/v1/grating" @{ name = "G1" }
-$st3 | ConvertTo-Json -Depth 5
-Write-Host ""
+# 5) GET status (final)
+$status2 = Invoke-Json -Method "GET" -Path "/api/v1/status"
+Write-Host "Status (final):" -ForegroundColor Yellow
+$status2 | ConvertTo-Json -Depth 10
 
-# 5) GET status again
-Write-Host "[5] GET /api/v1/status (final)"
-$st4 = Invoke-JsonGet "/api/v1/status"
-$st4 | ConvertTo-Json -Depth 5
 Write-Host ""
-
-# Simple checks (non-fatal, just human-readable)
-Write-Host "== Checks =="
-Write-Host ("slit_width_um: {0} -> {1}" -f $st0.slit_width_um, $st4.slit_width_um)
-Write-Host ("lamp_on      : {0} -> {1}" -f $st0.lamp_on, $st4.lamp_on)
-Write-Host ("grating      : {0} -> {1}" -f $st0.grating, $st4.grating)
-Write-Host ""
-Write-Host "Done."
+Write-Host "Done." -ForegroundColor Green

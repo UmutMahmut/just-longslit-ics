@@ -152,12 +152,12 @@ $results = New-Object System.Collections.Generic.List[object]
 
 # --- Endpoint drift: unversioned usage (avoid matching /api/v1/* by negative lookbehind) ---
 $results.Add((Run-Check -Id "E1" -Title "Unversioned endpoint usage (runtime-facing)" -Mode "regex" `
-  -Patterns @('(?<!/api/v1)/status(\b|")','(?<!/api/v1)/slit(\b|")','(?<!/api/v1)/lamp(\b|")','(?<!/api/v1)/grating(\b|")','(?<!/api/v1)/capabilities(\b|")','(?<!/api/v1)/status/full(\b|")') `
+  -Patterns @('(?<!/api/v1)/status(\b|")','(?<!/api/v1)/slit(\b|")','(?<!/api/v1)/lamp(\b|")','(?<!/api/v1)/capabilities(\b|")','(?<!/api/v1)/status/full(\b|")') `
   -IncludeRegex @("\\just-ls-ics-starter\\(ui|scripts|tests)\\") `
   -ExcludeRegex @("\\just-ls-ics-starter\\src\\justls\\ics\\routers\\") )) | Out-Null
 
 $results.Add((Run-Check -Id "E2" -Title "Unversioned endpoint mentions (docs/README)" -Mode "regex" `
-  -Patterns @('(?<!/api/v1)/status(\b|")','(?<!/api/v1)/slit(\b|")','(?<!/api/v1)/lamp(\b|")','(?<!/api/v1)/grating(\b|")','(?<!/api/v1)/capabilities(\b|")','(?<!/api/v1)/status/full(\b|")') `
+  -Patterns @('(?<!/api/v1)/status(\b|")','(?<!/api/v1)/slit(\b|")','(?<!/api/v1)/lamp(\b|")','(?<!/api/v1)/capabilities(\b|")','(?<!/api/v1)/status/full(\b|")') `
   -IncludeRegex @("\\docs\\","\\README\.md$") )) | Out-Null
 
 # --- Payload drift: legacy request keys that should NOT appear in runtime UI/scripts/tests ---
@@ -167,8 +167,8 @@ $results.Add((Run-Check -Id "P1" -Title "Legacy request keys in UI/scripts/tests
   -ExcludeRegex @("\\just-ls-ics-starter\\ui\\.*\.bak$") )) | Out-Null
 
 # --- Response drift: legacy field names in UI ---
-$results.Add((Run-Check -Id "R1" -Title "Legacy response fields in UI/scripts (slit_width/lamp/grating variants)" -Mode "regex" `
-  -Patterns @('\bslit_width\b','\blamp_state\b','\bgrating_mode\b','\bslit_state\b') `
+$results.Add((Run-Check -Id "R1" -Title "Legacy response fields in UI/scripts (slit_width/lamp variants)" -Mode "regex" `
+  -Patterns @('\bslit_width\b','\blamp_state\b','\bslit_state\b') `
   -IncludeRegex @("\\just-ls-ics-starter\\(ui|scripts|tests)\\") )) | Out-Null
 
 # --- Hard-coded base URL ---

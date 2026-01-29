@@ -1003,7 +1003,7 @@
 <div class="title-block">
 <div class="title-main">
               JUST 长缝光谱仪控制
-              <span class="badge-pill">Local Console · v0.4</span>
+              <span class="badge-pill">Local Console · v0.2</span>
 </div>
 <div class="title-tag">LONG-SLIT SPECTROGRAPH · INSTRUMENT LOCAL UI</div>
 </div>
@@ -1306,13 +1306,13 @@
 <pre id="status-raw-pre" style="margin:0; white-space:pre-wrap; word-break:break-word;">等待首次状态刷新...</pre>
 </div>
 </details>
+</section>
 <section class="log-panel">
 <div class="log-header">
 <span>事件日志 / Event Log</span>
 <span id="log-hint">最多保留 200 条</span>
 </div>
 <ul class="log-list" id="log-list"></ul>
-</section>
 </section>
 <!-- Slit -->
 <section class="tab-panel" data-tab-panel="slit">
@@ -1554,10 +1554,6 @@
     // Camera polling (latest frame, no-save)
     const CAM_POLL_MS = 900;
     const CAM_FETCH_TIMEOUT_MS = 6000;
-
-
-    // Local UI fallback image (served from ui/assets/latest.jpg)
-    const UI_LATEST_FALLBACK_REL = "assets/latest.jpg";
 
 
     // Storage
@@ -2319,25 +2315,6 @@
     // ===== Camera polling (latest frame, no-save) =====
     let camTimer = null;
 
-    function uiAssetUrl(relPath) {
-      try { return new URL(relPath, window.location.href).toString(); } catch { return relPath; }
-    }
-
-    function setFallbackImages(imgEls) {
-      const imgs = (imgEls || []).filter(Boolean);
-      const fb = uiAssetUrl(UI_LATEST_FALLBACK_REL) + (UI_LATEST_FALLBACK_REL.includes("?") ? "&" : "?") + "t=" + Date.now();
-
-      imgs.forEach((img) => {
-        try {
-          const old = img.dataset.objurl || "";
-          if (old && String(old).startsWith("blob:")) URL.revokeObjectURL(old);
-        } catch {}
-        try { delete img.dataset.objurl; } catch {}
-        img.src = fb;
-      });
-    }
-
-
     function abortableFetch(url, timeoutMs) {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -2374,10 +2351,8 @@
         if (pillEl) pillEl.textContent = `${role}: OK`;
       } catch (e) {
         const ts = fmtTime(new Date());
-        const emsg = String(e && e.message ? e.message : e);
-        metas.forEach((m) => m.textContent = `DEMO @ ${ts}: ${emsg}`);
-        if (pillEl) pillEl.textContent = `${role}: DEMO`;
-        setFallbackImages(imgs);
+        metas.forEach((m) => m.textContent = `ERR @ ${ts}: ${String(e && e.message ? e.message : e)}`);
+        if (pillEl) pillEl.textContent = `${role}: ERR`;
       }
     }
 
@@ -2729,9 +2704,6 @@
 
       loadApiBase();
       renderOperatorView();
-
-      // Seed local fallback image so <img> always has a valid src (ui/assets/latest.jpg)
-      setFallbackImages([slitcamImg, slitcamImg2, bgrImgB, bgrImgG, bgrImgR, bgrImgB2, bgrImgG2, bgrImgR2]);
 
       startCameraPolling();
       setInterval(updateClock, 1000);

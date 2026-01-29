@@ -13,16 +13,16 @@ class SimHAL(HAL):
         self,
         *,
         slit_width_um: float = 100.0,
-        grating: str = "G300",
         lamp_on: bool = False,
         temperature_c: float = 20.0,
+        slit_angle_deg: float = 0.0,
         capabilities: Capabilities | None = None,
     ) -> None:
         self._state = State(
             slit_width_um=float(slit_width_um),
-            grating=str(grating),
             lamp_on=bool(lamp_on),
             temperature_c=float(temperature_c),
+            slit_angle_deg=float(slit_angle_deg),
         )
         self._cap = capabilities or Capabilities()
 
@@ -39,14 +39,15 @@ class SimHAL(HAL):
         self._state = replace(self._state, slit_width_um=width_um)
         return self._state
 
-    def set_grating(self, name: str) -> State:
-        name = str(name).strip()
-        if not name:
-            raise ValueError("grating name must be non-empty")
-        # MVP: 不做枚举收紧，先宽松接受（避免你现在 test_set_grating_accepts_G1 失败）
-        self._state = replace(self._state, grating=name)
-        return self._state
 
+
+
+    def set_slit_angle_deg(self, angle_deg: float) -> State:
+        angle_deg = float(angle_deg)
+        if angle_deg < -90 or angle_deg > 90:
+            raise ValueError("slit angle must be in [-90, 90]")
+        self._state = replace(self._state, slit_angle_deg=angle_deg)
+        return self._state
     def set_calib_lamp_on(self, on: bool) -> State:
         self._state = replace(self._state, lamp_on=bool(on))
         return self._state

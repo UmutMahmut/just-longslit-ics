@@ -5,30 +5,25 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ..hal.capabilities import Capabilities
 
-
 class StateDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     slit_width_um: float = Field(..., ge=0)
-    grating: str
+    slit_angle_deg: float = Field(..., ge=-90, le=90)
     lamp_on: bool
     temperature_c: float
-
 
 class SlitReq(BaseModel):
     width_um: float = Field(..., gt=0, le=5000)
     model_config = ConfigDict(json_schema_extra={"examples": [{"width_um": 200.0}]})
 
-
-class GratingReq(BaseModel):
-    name: str = Field(..., min_length=1)
-    model_config = ConfigDict(json_schema_extra={"examples": [{"name": "G1"}]})
-
+class SlitAngleReq(BaseModel):
+    angle_deg: float = Field(..., ge=-90, le=90)
+    model_config = ConfigDict(json_schema_extra={"examples": [{"angle_deg": 0.0}]})
 
 class LampReq(BaseModel):
     on: bool = Field(..., strict=True)
     model_config = ConfigDict(json_schema_extra={"examples": [{"on": True}]})
-
 
 class StatusFullDTO(BaseModel):
     state: StateDTO
