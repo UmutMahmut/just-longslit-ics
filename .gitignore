@@ -1,3 +1,6 @@
+# =========================
+# Local utility outputs / personal helper files
+# =========================
 dump-tree.cmd
 dump-tree-brief.cmd
 repo_tree.txt
@@ -21,15 +24,21 @@ pip-wheel-metadata/
 .dmypy.json
 dmypy.json
 
+# =========================
 # Virtual environments / local env
+# =========================
 .venv/
 venv/
 ENV/
+.conda-desktop/
+.conda-webview/
 .env
 .env.*
 .envrc
 
+# =========================
 # Build artifacts
+# =========================
 build/
 dist/
 *.spec
@@ -41,12 +50,21 @@ site/
 docs/site/
 
 # =========================
+# Desktop app local runtime artifacts
+# =========================
+desktop_webview/logs/
+
+# =========================
 # OS / Editors
 # =========================
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/# --- ICS local sweep outputs ---
+.idea/
+
+# =========================
+# ICS local sweep outputs
+# =========================
 just-ls-ics-starter/scripts/sweep_out/
 **/repo_sweep_*.log
 **/repo_sweep_*.summary.json

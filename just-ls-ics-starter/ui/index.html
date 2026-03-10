@@ -1535,1207 +1535,1261 @@
 </div>
 </div>
 <script>
-    // ===== Constants =====
-    const SLIT_SCALE_UM_PER_ARCSEC = 128.34;  // from P0: 128.34 um/arcsec
+  // ===== Constants =====
+  const URL_PARAMS = new URLSearchParams(window.location.search);
+  const DESKTOP_MODE = URL_PARAMS.get("desktop") === "1";
 
-    // Runtime site settings (editable in UI)
-    let site = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
+  const SLIT_SCALE_UM_PER_ARCSEC = 128.34;
 
-    // Observatory longitude (east positive), deg (legacy default; unused once SITE is enabled)
-    // const OBS_LONGITUDE_DEG = 121.60424;
+  let site = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
+  const SITE_DEFAULT = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
 
-    const SITE_DEFAULT = { lat_deg: 38.6068, lon_deg: 93.8961, alt_m: 4200 };
+  const POLL_MIN_MS = DESKTOP_MODE ? 2500 : 1000;
+  const POLL_MAX_MS = DESKTOP_MODE ? 12000 : 10000;
+  const FETCH_TIMEOUT_MS = 5000;
 
-    // Polling
-    const POLL_MIN_MS = 1000;
-    const POLL_MAX_MS = 10000;
-    const FETCH_TIMEOUT_MS = 5000;
+  const CAM_POLL_MS = DESKTOP_MODE ? 3000 : 900;
+  const CAM_FETCH_TIMEOUT_MS = 6000;
 
-    // Camera polling (latest frame, no-save)
-    const CAM_POLL_MS = 900;
-    const CAM_FETCH_TIMEOUT_MS = 6000;
+  const UI_LATEST_FALLBACK_REL = "assets/latest.jpg";
 
+  const LS_API_BASE = "justls_api_base_v1";
+  const LS_SITE = "justls_site_v1";
+  const LS_THEME = "justls_theme_v1";
+  const LS_THEME_LEGACY = "justls_theme";
 
-    // Local UI fallback image (served from ui/assets/latest.jpg)
-    const UI_LATEST_FALLBACK_REL = "assets/latest.jpg";
+  // ===== Time baseline =====
+  let timeOffsetMs = 0;
+  let lastServerTimeSyncAt = null;
 
+  function getNowRef() {
+    return new Date(Date.now() + timeOffsetMs);
+  }
 
-    // Storage
-    const LS_API_BASE = "justls_api_base_v1";
-    const LS_SITE = "justls_site_v1";
-    const LS_THEME = "justls_theme_v1";
-    const LS_THEME_LEGACY = "justls_theme";
+  function syncTimeFromMeta(meta) {
+    const ts = meta && meta.timestamp_utc ? String(meta.timestamp_utc) : "";
+    if (!ts) return false;
 
-    // ===== Time baseline (UTC first) =====
-    // If backend provides meta.timestamp_utc (ISO8601), we compute:
-    //   timeOffsetMs = serverUtcMs - Date.now()
-    // All displayed time fields use nowRef = new Date(Date.now() + timeOffsetMs)
-    let timeOffsetMs = 0;
-    let lastServerTimeSyncAt = null;
+    const ms = Date.parse(ts);
+    if (!Number.isFinite(ms)) return false;
 
-    function getNowRef() {
-      return new Date(Date.now() + timeOffsetMs);
+    timeOffsetMs = ms - Date.now();
+    lastServerTimeSyncAt = new Date();
+    updateClock(true);
+    return true;
+  }
+
+  // ===== DOM =====
+  const apiBaseInput = document.getElementById("api-base-input");
+  const apiBaseSaveBtn = document.getElementById("api-base-save");
+  const apiBaseResetBtn = document.getElementById("api-base-reset");
+
+  const connectionDot = document.getElementById("connection-dot");
+  const connectionText = document.getElementById("connection-text");
+  const connMetrics = document.getElementById("conn-metrics");
+
+  const refreshStatusBtn = document.getElementById("refresh-status-btn");
+  const quickRefreshBtn = document.getElementById("quick-refresh-btn");
+
+  const pillRunmode = document.getElementById("pill-runmode");
+  const pillHal = document.getElementById("pill-hal");
+
+  const capTableBody = document.getElementById("cap-table-body");
+
+  const statusFreshness = document.getElementById("status-freshness");
+
+  const chipSlit = document.getElementById("chip-slit");
+  const chipSlitAngle = document.getElementById("chip-slit-angle");
+  const chipLamp = document.getElementById("chip-lamp");
+  const chipTemp = document.getElementById("chip-temp");
+  const chipSource = document.getElementById("chip-source");
+  const chipServerUtc = document.getElementById("chip-server-utc");
+
+  const slitcamPill = document.getElementById("slitcam-pill");
+  const bgrPill = document.getElementById("bgr-pill");
+
+  const slitcamImg = document.getElementById("slitcam-img");
+  const slitcamMeta = document.getElementById("slitcam-meta");
+  const slitcamImg2 = document.getElementById("slitcam-img-2");
+  const slitcamMeta2 = document.getElementById("slitcam-meta-2");
+
+  const bgrImgB = document.getElementById("bgr-img-b");
+  const bgrImgG = document.getElementById("bgr-img-g");
+  const bgrImgR = document.getElementById("bgr-img-r");
+  const bgrMetaB = document.getElementById("bgr-meta-b");
+  const bgrMetaG = document.getElementById("bgr-meta-g");
+  const bgrMetaR = document.getElementById("bgr-meta-r");
+
+  const bgrImgB2 = document.getElementById("bgr-img-b-2");
+  const bgrImgG2 = document.getElementById("bgr-img-g-2");
+  const bgrImgR2 = document.getElementById("bgr-img-r-2");
+  const bgrMetaB2 = document.getElementById("bgr-meta-b-2");
+  const bgrMetaG2 = document.getElementById("bgr-meta-g-2");
+  const bgrMetaR2 = document.getElementById("bgr-meta-r-2");
+
+  const kvSlitUm = document.getElementById("kv-slit-um");
+  const kvSlitArcsec = document.getElementById("kv-slit-arcsec");
+  const kvLamp = document.getElementById("kv-lamp");
+  const kvTemp = document.getElementById("kv-temp");
+
+  const statusRawPre = document.getElementById("status-raw-pre");
+  const rawDetails = document.getElementById("raw-details");
+
+  const envTemp = document.getElementById("env-temp");
+  const envPill = document.getElementById("env-pill");
+
+  const slitReadback = document.getElementById("slit-readback");
+  const slitReadbackHint = document.getElementById("slit-readback-hint");
+
+  const slitCapPill = document.getElementById("slit-cap-pill");
+  const calCapPill = document.getElementById("cal-cap-pill");
+  const guidingCapPill = document.getElementById("guiding-cap-pill");
+  const camerasCapPill = document.getElementById("cameras-cap-pill");
+
+  const logList = document.getElementById("log-list");
+  const logListFull = document.getElementById("log-list-full");
+  const logCount = document.getElementById("log-count");
+
+  const copyLogBtn = document.getElementById("copy-log-btn");
+  const clearLogBtn = document.getElementById("clear-log-btn");
+  const logsCopyBtn = document.getElementById("logs-copy-btn");
+  const logsClearBtn = document.getElementById("logs-clear-btn");
+
+  const slitForm = document.getElementById("slit-form");
+  const slitUnit = document.getElementById("slit-unit");
+  const slitSubmitBtn = document.getElementById("slit-submit-btn");
+
+  const slitAngleForm = document.getElementById("slit-angle-form");
+  const slitAngleSubmitBtn = document.getElementById("slit-angle-submit-btn");
+
+  const lampForm = document.getElementById("lamp-form");
+  const lampSubmitBtn = document.getElementById("lamp-submit-btn");
+
+  const slitForm2 = document.getElementById("slit-form-2");
+  const slit2SubmitBtn = document.getElementById("slit2-submit-btn");
+
+  const lampForm2 = document.getElementById("lamp-form-2");
+  const lamp2SubmitBtn = document.getElementById("lamp2-submit-btn");
+
+  const timeLocalSpan = document.getElementById("time-local");
+  const timeUtcSpan = document.getElementById("time-utc");
+  const timeLstSpan = document.getElementById("time-lst");
+  const timeDateSpan = document.getElementById("time-date");
+  const timeEpochSpan = document.getElementById("time-epoch");
+  const timeJdSpan = document.getElementById("time-jd");
+  const timeMjdSpan = document.getElementById("time-mjd");
+  const timeDawnSpan = document.getElementById("time-dawn");
+  const timeDuskSpan = document.getElementById("time-dusk");
+
+  const siteLatInput = document.getElementById("site-lat");
+  const siteLonInput = document.getElementById("site-lon");
+  const siteAltInput = document.getElementById("site-alt");
+  const siteSaveBtn = document.getElementById("site-save");
+  const siteResetBtn = document.getElementById("site-reset");
+
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeText = document.getElementById("theme-text");
+
+  const opsList = document.getElementById("ops-list");
+  const opsHint = document.getElementById("ops-hint");
+
+  // ===== Operator View =====
+  function renderOperatorStatus(state, _meta) {
+    if (!opsList || !opsHint) return;
+
+    const items = [];
+    const api = (apiBase || "").trim() || "(not set)";
+
+    if (connectionOk) {
+      const rtt = (typeof lastRttMs === "number") ? `${Math.round(lastRttMs)}ms` : "—";
+      items.push(`连接：已连接（RTT ${rtt}）`);
+    } else {
+      items.push("连接：离线/异常（检查后端与 API 地址）");
+    }
+    items.push(`API：${api}`);
+
+    if (lastCapabilities) {
+      const enabled = Object.entries(lastCapabilities)
+        .filter(([k, v]) => !!v)
+        .map(([k]) => k)
+        .sort();
+      items.push(`capabilities：${enabled.length ? enabled.join(", ") : "(none)"}`);
+    } else {
+      items.push("capabilities：未就绪（等待 /api/v1/status/full）");
     }
 
-    function syncTimeFromMeta(meta) {
-      const ts = meta && meta.timestamp_utc ? String(meta.timestamp_utc) : "";
-      if (!ts) return false;
-
-      const ms = Date.parse(ts);
-      if (!Number.isFinite(ms)) return false;
-
-      timeOffsetMs = ms - Date.now();
-      lastServerTimeSyncAt = new Date();
-      // Force immediate refresh of all time-derived fields
-      updateClock(true);
-      return true;
+    if (state && typeof state === "object") {
+      const slit = (state.slit_width_um != null) ? `${state.slit_width_um} μm` : "—";
+      const ang = (state.slit_angle_deg != null) ? `${state.slit_angle_deg}°` : "—";
+      const lamp = (state.lamp_on != null) ? (state.lamp_on ? "ON" : "OFF") : "—";
+      items.push(`当前：slit ${slit} · angle ${ang} · lamp ${lamp}`);
     }
 
-    // ===== DOM =====
-    const apiBaseInput = document.getElementById("api-base-input");
-    const apiBaseSaveBtn = document.getElementById("api-base-save");
-    const apiBaseResetBtn = document.getElementById("api-base-reset");
+    const canSlit = !!(lastCapabilities && lastCapabilities.slit);
+    const canAngle = !!(lastCapabilities && lastCapabilities.slit_angle);
+    const canLamp = !!(lastCapabilities && (lastCapabilities.calib_lamps || lastCapabilities.lamp));
 
-    const connectionDot = document.getElementById("connection-dot");
-    const connectionText = document.getElementById("connection-text");
-    const connMetrics = document.getElementById("conn-metrics");
-
-    const refreshStatusBtn = document.getElementById("refresh-status-btn");
-    const quickRefreshBtn = document.getElementById("quick-refresh-btn");
-
-    const pillRunmode = document.getElementById("pill-runmode");
-    const pillHal = document.getElementById("pill-hal");
-
-    const capTableBody = document.getElementById("cap-table-body");
-
-    const statusFreshness = document.getElementById("status-freshness");
-
-    const chipSlit = document.getElementById("chip-slit");
-    const chipSlitAngle = document.getElementById("chip-slit-angle");
-    const chipLamp = document.getElementById("chip-lamp");
-    const chipTemp = document.getElementById("chip-temp");
-    const chipSource = document.getElementById("chip-source");
-    const chipServerUtc = document.getElementById("chip-server-utc");
-
-    const slitcamPill = document.getElementById("slitcam-pill");
-    const bgrPill = document.getElementById("bgr-pill");
-
-    const slitcamImg = document.getElementById("slitcam-img");
-    const slitcamMeta = document.getElementById("slitcam-meta");
-    const slitcamImg2 = document.getElementById("slitcam-img-2");
-    const slitcamMeta2 = document.getElementById("slitcam-meta-2");
-
-    const bgrImgB = document.getElementById("bgr-img-b");
-    const bgrImgG = document.getElementById("bgr-img-g");
-    const bgrImgR = document.getElementById("bgr-img-r");
-    const bgrMetaB = document.getElementById("bgr-meta-b");
-    const bgrMetaG = document.getElementById("bgr-meta-g");
-    const bgrMetaR = document.getElementById("bgr-meta-r");
-
-    const bgrImgB2 = document.getElementById("bgr-img-b-2");
-    const bgrImgG2 = document.getElementById("bgr-img-g-2");
-    const bgrImgR2 = document.getElementById("bgr-img-r-2");
-    const bgrMetaB2 = document.getElementById("bgr-meta-b-2");
-    const bgrMetaG2 = document.getElementById("bgr-meta-g-2");
-    const bgrMetaR2 = document.getElementById("bgr-meta-r-2");
-
-
-    const kvSlitUm = document.getElementById("kv-slit-um");
-    const kvSlitArcsec = document.getElementById("kv-slit-arcsec");
-    const kvLamp = document.getElementById("kv-lamp");
-    const kvTemp = document.getElementById("kv-temp");
-
-    const statusRawPre = document.getElementById("status-raw-pre");
-
-    const envTemp = document.getElementById("env-temp");
-    const envPill = document.getElementById("env-pill");
-
-    const slitReadback = document.getElementById("slit-readback");
-    const slitReadbackHint = document.getElementById("slit-readback-hint");
-
-    const slitCapPill = document.getElementById("slit-cap-pill");
-    const calCapPill = document.getElementById("cal-cap-pill");
-    const guidingCapPill = document.getElementById("guiding-cap-pill");
-    const camerasCapPill = document.getElementById("cameras-cap-pill");
-
-    const logList = document.getElementById("log-list");
-    const logListFull = document.getElementById("log-list-full");
-    const logCount = document.getElementById("log-count");
-
-    const copyLogBtn = document.getElementById("copy-log-btn");
-    const clearLogBtn = document.getElementById("clear-log-btn");
-    const logsCopyBtn = document.getElementById("logs-copy-btn");
-    const logsClearBtn = document.getElementById("logs-clear-btn");
-
-    // Forms
-    const slitForm = document.getElementById("slit-form");
-    const slitUnit = document.getElementById("slit-unit");
-    const slitSubmitBtn = document.getElementById("slit-submit-btn");
-
-    const slitAngleForm = document.getElementById("slit-angle-form");
-    const slitAngleSubmitBtn = document.getElementById("slit-angle-submit-btn");
-
-    const lampForm = document.getElementById("lamp-form");
-    const lampSubmitBtn = document.getElementById("lamp-submit-btn");
-
-    const slitForm2 = document.getElementById("slit-form-2");
-    const slit2SubmitBtn = document.getElementById("slit2-submit-btn");
-
-    const lampForm2 = document.getElementById("lamp-form-2");
-    const lamp2SubmitBtn = document.getElementById("lamp2-submit-btn");
-
-    // Time
-    const timeLocalSpan = document.getElementById("time-local");
-    const timeUtcSpan = document.getElementById("time-utc");
-    const timeLstSpan = document.getElementById("time-lst");
-    const timeDateSpan = document.getElementById("time-date");
-    const timeEpochSpan = document.getElementById("time-epoch");
-    const timeJdSpan = document.getElementById("time-jd");
-    const timeMjdSpan = document.getElementById("time-mjd");
-    const timeDawnSpan = document.getElementById("time-dawn");
-    const timeDuskSpan = document.getElementById("time-dusk");
-
-    const siteLatInput = document.getElementById("site-lat");
-    const siteLonInput = document.getElementById("site-lon");
-    const siteAltInput = document.getElementById("site-alt");
-    const siteSaveBtn = document.getElementById("site-save");
-    const siteResetBtn = document.getElementById("site-reset");
-
-    const themeToggle = document.getElementById("theme-toggle");
-    const themeText = document.getElementById("theme-text");
-
-    const opsList = document.getElementById("ops-list");
-    const opsHint = document.getElementById("ops-hint");
-
-
-    // ===== Operator View (safe, non-blocking) =====
-    function renderOperatorStatus(state, _meta) { // _meta reserved for future use (currently unused)
-      if (!opsList || !opsHint) return;
-
-      const items = [];
-      const api = (apiBase || "").trim() || "(not set)";
-
-      if (connectionOk) {
-        const rtt = (typeof lastRttMs === 'number') ? `${Math.round(lastRttMs)}ms` : "—";
-        items.push(`连接：已连接（RTT ${rtt}）`);
-      } else {
-        items.push(`连接：离线/异常（检查后端与 API 地址）`);
-      }
-      items.push(`API：${api}`);
-
-      if (lastCapabilities) {
-        const enabled = Object.entries(lastCapabilities)
-          .filter(([k, v]) => !!v)
-          .map(([k]) => k)
-          .sort();
-        items.push(`capabilities：${enabled.length ? enabled.join(", ") : "(none)"}`);
-      } else {
-        items.push('capabilities：未就绪（等待 /api/v1/status/full）');
-      }
-
-      if (state && typeof state === 'object') {
-        const slit = (state.slit_width_um != null) ? `${state.slit_width_um} μm` : '—';
-        const ang = (state.slit_angle_deg != null) ? `${state.slit_angle_deg}°` : '—';
-        const lamp = (state.lamp_on != null) ? (state.lamp_on ? 'ON' : 'OFF') : '—';
-        items.push(`当前：slit ${slit} · angle ${ang} · lamp ${lamp}`);
-      }
-
-      const canSlit = !!(lastCapabilities && lastCapabilities.slit);
-      const canAngle = !!(lastCapabilities && lastCapabilities.slit_angle);
-      const canLamp = !!(lastCapabilities && (lastCapabilities.calib_lamps || lastCapabilities.lamp));
-
-      if (!connectionOk) {
-        opsHint.textContent = '提示：确认 uvicorn 已启动；检查浏览器地址栏与 API 地址是否一致；必要时查看 Event Log。';
-      } else if (!lastCapabilities) {
-        opsHint.textContent = '提示：后端已通；等待 capabilities 刷新完成后再进行操作。';
-      } else if (canSlit || canAngle || canLamp) {
-        const steps = [];
-        if (canSlit) steps.push('① 设狭缝');
-        if (canAngle) steps.push('② 设角度');
-        if (canLamp) steps.push('③ 开/关灯');
-        opsHint.textContent = '建议流程：' + steps.join(' → ') + '（异常时复制 Event Log 反馈）。';
-      } else {
-        opsHint.textContent = '提示：capabilities 均为 N/A，本页面处于占位/演示模式。';
-      }
-
-      opsList.innerHTML = '';
-      for (const t of items) {
-        const li = document.createElement('li');
-        li.className = 'ops-item';
-        li.textContent = t;
-        opsList.appendChild(li);
-      }
+    if (!connectionOk) {
+      opsHint.textContent = "提示：确认 uvicorn 已启动；检查浏览器地址栏与 API 地址是否一致；必要时查看 Event Log。";
+    } else if (!lastCapabilities) {
+      opsHint.textContent = "提示：后端已通；等待 capabilities 刷新完成后再进行操作。";
+    } else if (canSlit || canAngle || canLamp) {
+      const steps = [];
+      if (canSlit) steps.push("① 设狭缝");
+      if (canAngle) steps.push("② 设角度");
+      if (canLamp) steps.push("③ 开/关灯");
+      opsHint.textContent = "建议流程：" + steps.join(" → ") + "（异常时复制 Event Log 反馈）。";
+    } else {
+      opsHint.textContent = "提示：capabilities 均为 N/A，本页面处于占位/演示模式。";
     }
 
-    function renderOperatorView() {
-      try {
-        renderOperatorStatus(lastState, lastMeta);
-      } catch (e) { /* do not crash UI */ }
+    opsList.innerHTML = "";
+    for (const t of items) {
+      const li = document.createElement("li");
+      li.className = "ops-item";
+      li.textContent = t;
+      opsList.appendChild(li);
     }
+  }
 
-    // Tabs
-    const tabs = document.querySelectorAll(".tab");
-    const tabPanels = document.querySelectorAll(".tab-panel");
+  function renderOperatorView() {
+    try {
+      renderOperatorStatus(lastState, lastMeta);
+    } catch (e) {}
+  }
 
-    // ===== State =====
-    let apiBase = "";
-    let pollTimer = null;
-    let pollDelayMs = POLL_MIN_MS;
+  // ===== Tabs =====
+  const tabs = document.querySelectorAll(".tab");
+  const tabPanels = document.querySelectorAll(".tab-panel");
 
-    let connectionOk = false;
+  function getActiveTabName() {
+    const active = document.querySelector(".tab.tab-active");
+    return active ? active.getAttribute("data-tab") : "overview";
+  }
 
-    let lastOkAt = null;
-    let lastRttMs = null;
-    let failCount = 0;
+  // ===== State =====
+  let apiBase = "";
+  let pollTimer = null;
+  let pollDelayMs = POLL_MIN_MS;
 
-    let lastCapabilities = null;
-    let lastState = null;
-    let lastMeta = null;
+  let connectionOk = false;
 
-    const LOG_MAX = 200;
-    const logBuffer = [];
+  let lastOkAt = null;
+  let lastRttMs = null;
+  let failCount = 0;
 
-    // ===== Tabs behavior =====
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.getAttribute("data-tab");
-        tabs.forEach((t) => t.classList.remove("tab-active"));
-        tab.classList.add("tab-active");
-        tabPanels.forEach((panel) => {
-          const name = panel.getAttribute("data-tab-panel");
-          panel.classList.toggle("tab-panel-active", name === target);
-        });
+  let lastCapabilities = null;
+  let lastState = null;
+  let lastMeta = null;
+
+  const LOG_MAX = 200;
+  const logBuffer = [];
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.getAttribute("data-tab");
+      tabs.forEach((t) => t.classList.remove("tab-active"));
+      tab.classList.add("tab-active");
+      tabPanels.forEach((panel) => {
+        const name = panel.getAttribute("data-tab-panel");
+        panel.classList.toggle("tab-panel-active", name === target);
       });
+
+      renderLogs();
+
+      if (document.visibilityState === "visible") {
+        stopCameraPolling();
+        startCameraPolling();
+      }
+    });
+  });
+
+  // ===== Logging =====
+  function fmtTime(date) {
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    const ss = String(date.getSeconds()).padStart(2, "0");
+    const ms = String(date.getMilliseconds()).padStart(3, "0");
+    return `${hh}:${mm}:${ss}.${ms}`;
+  }
+
+  function pushLog(level, message) {
+    const ts = new Date();
+    const line = `[${fmtTime(ts)}] ${level.toUpperCase()} ${message}`;
+    logBuffer.push(line);
+    while (logBuffer.length > LOG_MAX) logBuffer.shift();
+    renderLogs();
+  }
+
+  function renderLogs() {
+    if (logCount) logCount.textContent = `${logBuffer.length} / ${LOG_MAX}`;
+
+    const activeTab = getActiveTabName();
+
+    if (logList && activeTab === "overview") {
+      logList.innerHTML = "";
+      const tail = logBuffer.slice(-12);
+      for (const line of tail) {
+        const li = document.createElement("li");
+        li.className = "log-item";
+        const t = document.createElement("span");
+        t.className = "log-time";
+        t.textContent = line.slice(1, 13);
+        const msg = document.createElement("span");
+        const isErr = line.includes(" ERROR ");
+        const isOk = line.includes(" OK ");
+        msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
+        msg.textContent = line.slice(15);
+        li.appendChild(t);
+        li.appendChild(msg);
+        logList.appendChild(li);
+      }
+    }
+
+    if (logListFull && activeTab === "logs") {
+      logListFull.innerHTML = "";
+      for (const line of logBuffer) {
+        const li = document.createElement("li");
+        li.className = "log-item";
+        const t = document.createElement("span");
+        t.className = "log-time";
+        t.textContent = line.slice(1, 13);
+        const msg = document.createElement("span");
+        const isErr = line.includes(" ERROR ");
+        const isOk = line.includes(" OK ");
+        msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
+        msg.textContent = line.slice(15);
+        li.appendChild(t);
+        li.appendChild(msg);
+        logListFull.appendChild(li);
+      }
+    }
+  }
+
+  async function copyLogs() {
+    const text = logBuffer.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      pushLog("ok", "日志已复制到剪贴板。");
+    } catch {
+      pushLog("error", "复制失败（浏览器权限限制）。可手动选中文本复制。");
+    }
+  }
+
+  function clearLogs() {
+    logBuffer.length = 0;
+    renderLogs();
+    pushLog("info", "日志已清空。");
+  }
+
+  // ===== Time utils =====
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function fmtHMS(h, m, s) { return `${pad2(h)}:${pad2(m)}:${pad2(s)}`; }
+
+  function dateToJulianDate(date) {
+    const time = date.getTime();
+    const JD_UNIX_EPOCH = 2440587.5;
+    return time / 86400000 + JD_UNIX_EPOCH;
+  }
+
+  function gmstInHours(date) {
+    const JD = dateToJulianDate(date);
+    const D = JD - 2451545.0;
+    let GMST = 18.697374558 + 24.06570982441908 * D;
+    GMST = ((GMST % 24) + 24) % 24;
+    return GMST;
+  }
+
+  function lstInHours(date, longitudeDeg) {
+    let lst = gmstInHours(date) + longitudeDeg / 15.0;
+    lst = ((lst % 24) + 24) % 24;
+    return lst;
+  }
+
+  function hoursToHMSString(h) {
+    const totalSeconds = Math.floor(h * 3600 + 0.5);
+    const hh = Math.floor(totalSeconds / 3600);
+    const mm = Math.floor((totalSeconds % 3600) / 60);
+    const ss = totalSeconds % 60;
+    return fmtHMS(hh, mm, ss);
+  }
+
+  // ===== Theme =====
+  function applyTheme(mode) {
+    const m = (mode === "light") ? "light" : "dark";
+    const root = document.documentElement;
+
+    root.classList.toggle("theme-light", m === "light");
+    root.classList.toggle("theme-dark", m !== "light");
+
+    if (themeToggle) themeToggle.checked = (m === "light");
+    if (themeText) themeText.textContent = (m === "light") ? "白天" : "夜间";
+
+    try {
+      localStorage.setItem(LS_THEME, m);
+      if (localStorage.getItem(LS_THEME_LEGACY) != null) localStorage.removeItem(LS_THEME_LEGACY);
+    } catch (e) {}
+  }
+
+  function loadTheme() {
+    let mode = null;
+    try { mode = localStorage.getItem(LS_THEME) || localStorage.getItem(LS_THEME_LEGACY); } catch {}
+
+    if (mode !== "light" && mode !== "dark") {
+      const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+      mode = prefersLight ? "light" : "dark";
+    }
+
+    applyTheme(mode);
+  }
+
+  // ===== Site =====
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+  function readNumberOrDefault(inputEl, defaultValue) {
+    if (!inputEl) return defaultValue;
+    const s = String(inputEl.value ?? "").trim();
+    if (s === "") return defaultValue;
+    const v = Number(s);
+    return Number.isFinite(v) ? v : defaultValue;
+  }
+
+  function renderSiteInputs() {
+    if (siteLatInput) siteLatInput.value = String(site.lat_deg);
+    if (siteLonInput) siteLonInput.value = String(site.lon_deg);
+    if (siteAltInput) siteAltInput.value = String(site.alt_m);
+  }
+
+  function loadSite() {
+    let s = null;
+    try { s = localStorage.getItem(LS_SITE); } catch {}
+    if (s) {
+      try {
+        const obj = JSON.parse(s);
+        const lat = Number(obj.lat_deg);
+        const lon = Number(obj.lon_deg);
+        const alt = Number(obj.alt_m);
+        if (Number.isFinite(lat)) site.lat_deg = clamp(lat, -90, 90);
+        if (Number.isFinite(lon)) site.lon_deg = clamp(lon, -180, 180);
+        if (Number.isFinite(alt)) site.alt_m = clamp(alt, -500, 10000);
+      } catch {}
+    }
+    renderSiteInputs();
+  }
+
+  function saveSiteFromInputs() {
+    const lat = clamp(readNumberOrDefault(siteLatInput, SITE_DEFAULT.lat_deg), -90, 90);
+    const lon = clamp(readNumberOrDefault(siteLonInput, SITE_DEFAULT.lon_deg), -180, 180);
+    const alt = clamp(readNumberOrDefault(siteAltInput, SITE_DEFAULT.alt_m), -500, 10000);
+
+    site.lat_deg = lat;
+    site.lon_deg = lon;
+    site.alt_m = alt;
+
+    renderSiteInputs();
+    try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
+
+    updateClock(true);
+    pushLog("ok", `SITE saved: lat=${lat.toFixed(4)} lon=${lon.toFixed(4)} alt=${Math.round(alt)}m`);
+  }
+
+  function resetSiteDefault() {
+    site = { ...SITE_DEFAULT };
+    renderSiteInputs();
+    try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
+    updateClock(true);
+  }
+
+  // ===== Time extras =====
+  function isLeapYear(y){ return (y%4===0 && y%100!==0) || (y%400===0); }
+  function dayOfYearLocal(d){
+    const start = new Date(d.getFullYear(),0,1);
+    return Math.floor((d - start)/86400000) + 1;
+  }
+  function decimalYearLocal(d){
+    const y = d.getFullYear();
+    const days = isLeapYear(y) ? 366 : 365;
+    const doy = dayOfYearLocal(d);
+    const fracDay = (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds())/86400;
+    return y + ((doy-1) + fracDay)/days;
+  }
+  function julianDateFromMs(ms){
+    return ms/86400000 + 2440587.5;
+  }
+
+  // ===== Twilight =====
+  function deg2rad(x){ return x*Math.PI/180; }
+  function rad2deg(x){ return x*180/Math.PI; }
+  function normalizeDeg(x){ x = x % 360; return x < 0 ? x + 360 : x; }
+  function normalizeHours(x){ x = x % 24; return x < 0 ? x + 24 : x; }
+
+  function sunriseEquationUtcMinutes(dateLocalMidnight, latDeg, lonDeg, zenithDeg, isSunrise){
+    const N = dayOfYearLocal(dateLocalMidnight);
+    const lngHour = lonDeg / 15.0;
+
+    const t = N + ((isSunrise ? 6 : 18) - lngHour) / 24.0;
+    const M = (0.9856 * t) - 3.289;
+    let L = M + (1.916 * Math.sin(deg2rad(M))) + (0.020 * Math.sin(deg2rad(2*M))) + 282.634;
+    L = normalizeDeg(L);
+
+    let RA = rad2deg(Math.atan(0.91764 * Math.tan(deg2rad(L))));
+    RA = normalizeDeg(RA);
+    const Lquadrant  = Math.floor(L/90) * 90;
+    const RAquadrant = Math.floor(RA/90) * 90;
+    RA = RA + (Lquadrant - RAquadrant);
+    RA = RA / 15.0;
+
+    const sinDec = 0.39782 * Math.sin(deg2rad(L));
+    const cosDec = Math.cos(Math.asin(sinDec));
+
+    const cosH = (Math.cos(deg2rad(zenithDeg)) - (sinDec * Math.sin(deg2rad(latDeg)))) / (cosDec * Math.cos(deg2rad(latDeg)));
+    if (cosH > 1) return NaN;
+    if (cosH < -1) return NaN;
+
+    let H = isSunrise ? (360 - rad2deg(Math.acos(cosH))) : rad2deg(Math.acos(cosH));
+    H = H / 15.0;
+
+    const T = H + RA - (0.06571 * t) - 6.622;
+    let UT = T - lngHour;
+    UT = normalizeHours(UT);
+
+    return UT * 60.0;
+  }
+
+  function minutesUtcToLocalHM(dateLocalMidnight, utcMinutes){
+    if (!Number.isFinite(utcMinutes)) return "N/A";
+    const baseUtc = new Date(Date.UTC(dateLocalMidnight.getFullYear(), dateLocalMidnight.getMonth(), dateLocalMidnight.getDate(), 0, 0, 0));
+    const dt = new Date(baseUtc.getTime() + utcMinutes*60000);
+    return fmtHMS(dt.getHours(), dt.getMinutes(), 0).slice(0,5);
+  }
+
+  let _lastTwilightKey = null;
+  function updateTwilight(nowRef, force=false){
+    const now = nowRef || getNowRef();
+    const key = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+    if (!force && _lastTwilightKey === key) return;
+    _lastTwilightKey = key;
+
+    const lat = Number(site.lat_deg);
+    const lon = Number(site.lon_deg);
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      if (timeDawnSpan) timeDawnSpan.textContent = "N/A";
+      if (timeDuskSpan) timeDuskSpan.textContent = "N/A";
+      return;
+    }
+
+    const zenithAstro = 108.0;
+    const dawnMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, true);
+    const duskMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, false);
+
+    if (timeDawnSpan) timeDawnSpan.textContent = minutesUtcToLocalHM(localMidnight, dawnMin);
+    if (timeDuskSpan) timeDuskSpan.textContent = minutesUtcToLocalHM(localMidnight, duskMin);
+  }
+
+  function updateClock(force=false) {
+    const now = getNowRef();
+
+    if (timeLocalSpan) timeLocalSpan.textContent = fmtHMS(now.getHours(), now.getMinutes(), now.getSeconds());
+    if (timeUtcSpan) timeUtcSpan.textContent = fmtHMS(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+    if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, site.lon_deg));
+
+    if (timeDateSpan) timeDateSpan.textContent = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+    if (timeEpochSpan) timeEpochSpan.textContent = decimalYearLocal(now).toFixed(5);
+
+    const jd = julianDateFromMs(now.getTime());
+    if (timeJdSpan) timeJdSpan.textContent = jd.toFixed(5);
+    if (timeMjdSpan) timeMjdSpan.textContent = (jd - 2400000.5).toFixed(5);
+
+    updateTwilight(now, force);
+  }
+
+  // ===== Connection UI =====
+  function setConnection(ok) {
+    connectionOk = !!ok;
+    if (ok) {
+      connectionDot.classList.remove("badge-dot--error");
+      connectionDot.classList.add("badge-dot--ok");
+      connectionText.textContent = "已连接";
+    } else {
+      connectionDot.classList.remove("badge-dot--ok");
+      connectionDot.classList.add("badge-dot--error");
+      connectionText.textContent = "异常/离线";
+    }
+    renderOperatorView();
+  }
+
+  function updateConnMetrics() {
+    const rtt = lastRttMs == null ? "—" : `${Math.round(lastRttMs)}ms`;
+    const ok = lastOkAt == null ? "—" : fmtTime(lastOkAt).slice(0, 12);
+    const poll = `${(pollDelayMs / 1000).toFixed(1)}s`;
+    connMetrics.textContent = `RTT ${rtt} · OK ${ok} · FAIL ${failCount} · ${poll}`;
+  }
+
+  // ===== Fetch helper =====
+  async function apiRequest(path, { method = "GET", json = null } = {}) {
+    let url = "";
+    try {
+      url = new URL(path, apiBase).toString();
+    } catch {
+      url = `${apiBase}${path}`;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const t0 = performance.now();
+    try {
+      const resp = await fetch(url, {
+        method,
+        headers: json ? { "Content-Type": "application/json" } : undefined,
+        body: json ? JSON.stringify(json) : undefined,
+        signal: controller.signal,
+      });
+      const t1 = performance.now();
+      lastRttMs = t1 - t0;
+
+      const text = await resp.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
+      if (!resp.ok) {
+        const detail = (data && typeof data === "object" && data.detail) ? data.detail : data;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+
+      return data;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  // ===== Capabilities =====
+  function capRow(name, ok, desc) {
+    const tr = document.createElement("tr");
+    const td1 = document.createElement("td");
+    const td2 = document.createElement("td");
+    const td3 = document.createElement("td");
+    td1.textContent = name;
+    td2.innerHTML = ok
+      ? `<span class="pill-soft pill-ok">AVAILABLE</span>`
+      : `<span class="pill-soft pill-na">N/A</span>`;
+    td3.textContent = desc;
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    return tr;
+  }
+
+  function applyCapabilities(cap) {
+    lastCapabilities = cap || null;
+
+    const flags = cap || {};
+    const map = {
+      "狭缝 (slit)": { key: "slit", desc: "狭缝宽度设置与回读" },
+      "狭缝方向 (slit_angle)": { key: "slit_angle", desc: "狭缝方向/角度设置与回读（新增）" },
+      "定标灯 (calib_lamps)": { key: "calib_lamps", desc: "主定标灯开关（多光源后续扩展）" },
+      "狭缝监测相机": { key: "slit_monitor_camera", desc: "狭缝监测相机（本 Sprint 占位）" },
+      "偏置导星": { key: "guider", desc: "导星相机/闭环（本 Sprint 占位）" },
+      "三通道相机 B/G/R": { key: "science_channels_bgr", desc: "曝光/快门控制（本 Sprint 占位）" },
+    };
+
+    if (capTableBody) {
+      capTableBody.innerHTML = "";
+      for (const [title, item] of Object.entries(map)) {
+        const ok = !!flags[item.key];
+        capTableBody.appendChild(capRow(title, ok, item.desc));
+      }
+    }
+
+    const disableByTab = {
+      guiding: !flags.guider,
+      cameras: !flags.science_channels_bgr,
+    };
+
+    tabs.forEach((t) => {
+      const tab = t.getAttribute("data-tab");
+      if (tab in disableByTab) {
+        t.disabled = disableByTab[tab];
+        t.title = t.disabled ? "当前 HAL/实现未启用该模块（capabilities=false）" : "";
+      }
     });
 
-    // ===== Logging =====
-    function fmtTime(date) {
-      const hh = String(date.getHours()).padStart(2, "0");
-      const mm = String(date.getMinutes()).padStart(2, "0");
-      const ss = String(date.getSeconds()).padStart(2, "0");
-      const ms = String(date.getMilliseconds()).padStart(3, "0");
-      return `${hh}:${mm}:${ss}.${ms}`;
+    if (slitCapPill) slitCapPill.textContent = `cap: slit=${!!flags.slit}`;
+    if (calCapPill) calCapPill.textContent = `cap: calib_lamps=${!!flags.calib_lamps}`;
+    if (guidingCapPill) guidingCapPill.textContent = `cap: guider=${!!flags.guider}`;
+    if (camerasCapPill) camerasCapPill.textContent = `cap: science_channels_bgr=${!!flags.science_channels_bgr}`;
+    renderOperatorView();
+  }
+
+  // ===== State rendering =====
+  function deriveViewModel(state, meta, capabilities) {
+    const st = state || {};
+    const mt = meta || {};
+
+    const slitUm = Number(st.slit_width_um);
+    const slitUmOk = Number.isFinite(slitUm);
+    const slitArc = slitUmOk ? (slitUm / SLIT_SCALE_UM_PER_ARCSEC) : NaN;
+    const slitArcOk = Number.isFinite(slitArc);
+
+    const slitAngleDeg = Number(st.slit_angle_deg);
+    const slitAngleOk = Number.isFinite(slitAngleDeg);
+    const lampOn = !!st.lamp_on;
+
+    const tempC = Number(st.temperature_c);
+    const tempOk = Number.isFinite(tempC);
+
+    const source = (mt.run_mode || mt.hal) ? `${mt.run_mode || "—"} / ${mt.hal || "—"}` : "—";
+    const serverUtc = mt.timestamp_utc ? mt.timestamp_utc : "—";
+
+    const chipSlitText = slitUmOk
+      ? `${slitUm.toFixed(1)} μm  (${slitArcOk ? `${slitArc.toFixed(2)}"` : "—"})`
+      : "—";
+
+    return {
+      chipSlitText,
+      chipSlitAngleText: slitAngleOk ? `${slitAngleDeg.toFixed(0)}°` : "—",
+      chipLampText: lampOn ? "ON" : "OFF",
+      chipTempText: tempOk ? `${tempC.toFixed(1)} ℃` : "—",
+      chipSourceText: source,
+      chipServerUtcText: serverUtc,
+
+      pillRunmodeText: `RUN_MODE ${mt.run_mode ? mt.run_mode : "—"}`,
+      pillHalText: `HAL ${mt.hal ? mt.hal : "—"}`,
+
+      kvSlitUmText: slitUmOk ? `${slitUm.toFixed(3)} μm` : "—",
+      kvSlitArcsecText: slitArcOk ? `${slitArc.toFixed(4)} arcsec` : "—",
+      kvLampText: lampOn ? "true" : "false",
+      kvTempText: tempOk ? `${tempC.toFixed(3)} ℃` : "—",
+
+      slitReadbackText: slitUmOk ? `${slitUm.toFixed(1)} μm` : "—",
+      slitReadbackHintText: slitArcOk ? `≈ ${slitArc.toFixed(2)} arcsec` : "—",
+
+      rawText: JSON.stringify({ state: st, meta: mt, capabilities }, null, 2),
+    };
+  }
+
+  function renderState(state, meta) {
+    lastState = state || null;
+    lastMeta = meta || null;
+    if (!state) return;
+
+    syncTimeFromMeta(meta);
+
+    const vm = deriveViewModel(state, meta, lastCapabilities);
+
+    if (chipSlit) chipSlit.textContent = vm.chipSlitText;
+    if (chipSlitAngle) chipSlitAngle.textContent = vm.chipSlitAngleText;
+    if (chipLamp) chipLamp.textContent = vm.chipLampText;
+    if (chipTemp) chipTemp.textContent = vm.chipTempText;
+    if (chipSource) chipSource.textContent = vm.chipSourceText;
+    if (chipServerUtc) chipServerUtc.textContent = vm.chipServerUtcText;
+
+    if (pillRunmode) pillRunmode.textContent = vm.pillRunmodeText;
+    if (pillHal) pillHal.textContent = vm.pillHalText;
+
+    if (kvSlitUm) kvSlitUm.textContent = vm.kvSlitUmText;
+    if (kvSlitArcsec) kvSlitArcsec.textContent = vm.kvSlitArcsecText;
+    if (kvLamp) kvLamp.textContent = vm.kvLampText;
+    if (kvTemp) kvTemp.textContent = vm.kvTempText;
+
+    if (slitReadback) slitReadback.textContent = vm.slitReadbackText;
+    if (slitReadbackHint) slitReadbackHint.textContent = vm.slitReadbackHintText;
+
+    if (statusRawPre && rawDetails && rawDetails.open) {
+      statusRawPre.textContent = vm.rawText;
     }
 
-    function pushLog(level, message) {
-      const ts = new Date();
-      const line = `[${fmtTime(ts)}] ${level.toUpperCase()} ${message}`;
-      logBuffer.push(line);
-      while (logBuffer.length > LOG_MAX) logBuffer.shift();
+    renderOperatorStatus(state, meta);
+  }
 
-      renderLogs();
-    }
+  // ===== Camera polling =====
+  let camTimer = null;
+  let camBusy = false;
 
-    function renderLogs() {
-      if (logCount) logCount.textContent = `${logBuffer.length} / ${LOG_MAX}`;
+  function uiAssetUrl(relPath) {
+    try { return new URL(relPath, window.location.href).toString(); } catch { return relPath; }
+  }
 
-      if (logList) {
-        logList.innerHTML = "";
-        const tail = logBuffer.slice(-12);
-        for (const line of tail) {
-          const li = document.createElement("li");
-          li.className = "log-item";
-          const t = document.createElement("span");
-          t.className = "log-time";
-          t.textContent = line.slice(1, 13);
-          const msg = document.createElement("span");
-          const isErr = line.includes(" ERROR ");
-          const isOk = line.includes(" OK ");
-          msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
-          msg.textContent = line.slice(15);
-          li.appendChild(t);
-          li.appendChild(msg);
-          logList.appendChild(li);
-        }
-      }
+  function setFallbackImages(imgEls) {
+    const imgs = (imgEls || []).filter(Boolean);
+    const fb = uiAssetUrl(UI_LATEST_FALLBACK_REL);
 
-      if (logListFull) {
-        logListFull.innerHTML = "";
-        for (const line of logBuffer) {
-          const li = document.createElement("li");
-          li.className = "log-item";
-          const t = document.createElement("span");
-          t.className = "log-time";
-          t.textContent = line.slice(1, 13);
-          const msg = document.createElement("span");
-          const isErr = line.includes(" ERROR ");
-          const isOk = line.includes(" OK ");
-          msg.className = "log-text" + (isErr ? " log-text--error" : isOk ? " log-text--success" : "");
-          msg.textContent = line.slice(15);
-          li.appendChild(t);
-          li.appendChild(msg);
-          logListFull.appendChild(li);
-        }
-      }
-    }
-
-    async function copyLogs() {
-      const text = logBuffer.join("\n");
+    imgs.forEach((img) => {
       try {
-        await navigator.clipboard.writeText(text);
-        pushLog("ok", "日志已复制到剪贴板。");
-      } catch {
-        pushLog("error", "复制失败（浏览器权限限制）。可手动选中文本复制。");
-      }
-    }
+        const old = img.dataset.objurl || "";
+        if (old && String(old).startsWith("blob:")) URL.revokeObjectURL(old);
+      } catch {}
+      try { delete img.dataset.objurl; } catch {}
 
-    function clearLogs() {
-      logBuffer.length = 0;
-      renderLogs();
-      pushLog("info", "日志已清空。");
-    }
-
-    // ===== Time utils =====
-    function pad2(n) { return String(n).padStart(2, "0"); }
-    function fmtHMS(h, m, s) { return `${pad2(h)}:${pad2(m)}:${pad2(s)}`; }
-
-    function dateToJulianDate(date) {
-      const time = date.getTime();
-      const JD_UNIX_EPOCH = 2440587.5;
-      return time / 86400000 + JD_UNIX_EPOCH;
-    }
-
-    function gmstInHours(date) {
-      const JD = dateToJulianDate(date);
-      const D = JD - 2451545.0;
-      let GMST = 18.697374558 + 24.06570982441908 * D;
-      GMST = ((GMST % 24) + 24) % 24;
-      return GMST;
-    }
-
-    function lstInHours(date, longitudeDeg) {
-      let lst = gmstInHours(date) + longitudeDeg / 15.0;
-      lst = ((lst % 24) + 24) % 24;
-      return lst;
-    }
-
-    function hoursToHMSString(h) {
-      const totalSeconds = Math.floor(h * 3600 + 0.5);
-      const hh = Math.floor(totalSeconds / 3600);
-      const mm = Math.floor((totalSeconds % 3600) / 60);
-      const ss = totalSeconds % 60;
-      return fmtHMS(hh, mm, ss);
-    }
-
-    // ===== Theme (Night/Day) =====
-    function applyTheme(mode) {
-      const m = (mode === 'light') ? 'light' : 'dark';
-      const root = document.documentElement;
-
-      root.classList.toggle('theme-light', m === 'light');
-      root.classList.toggle('theme-dark', m !== 'light');
-
-      if (themeToggle) themeToggle.checked = (m === 'light');
-      if (themeText) themeText.textContent = (m === 'light') ? '白天' : '夜间';
-
-      // Persist with unified key; migrate legacy best-effort
-      try {
-        localStorage.setItem(LS_THEME, m);
-        if (localStorage.getItem(LS_THEME_LEGACY) != null) localStorage.removeItem(LS_THEME_LEGACY);
-      } catch (e) { /* ignore */ }
-    }
-
-    function loadTheme() {
-      let mode = null;
-      try { mode = localStorage.getItem(LS_THEME) || localStorage.getItem(LS_THEME_LEGACY); } catch {}
-
-      if (mode !== "light" && mode !== "dark") {
-        const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-        mode = prefersLight ? "light" : "dark";
-      }
-
-      applyTheme(mode);
-    }
-
-    // ===== Site (lat/lon/alt) =====
-    function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
-
-    function readNumberOrDefault(inputEl, defaultValue) {
-      if (!inputEl) return defaultValue;
-      const s = String(inputEl.value ?? "").trim();
-      if (s === "") return defaultValue;
-      const v = Number(s);
-      return Number.isFinite(v) ? v : defaultValue;
-    }
-
-    function renderSiteInputs() {
-      if (siteLatInput) siteLatInput.value = String(site.lat_deg);
-      if (siteLonInput) siteLonInput.value = String(site.lon_deg);
-      if (siteAltInput) siteAltInput.value = String(site.alt_m);
-    }
-
-    function loadSite() {
-      let s = null;
-      try { s = localStorage.getItem(LS_SITE); } catch {}
-      if (s) {
-        try {
-          const obj = JSON.parse(s);
-          const lat = Number(obj.lat_deg);
-          const lon = Number(obj.lon_deg);
-          const alt = Number(obj.alt_m);
-          if (Number.isFinite(lat)) site.lat_deg = clamp(lat, -90, 90);
-          if (Number.isFinite(lon)) site.lon_deg = clamp(lon, -180, 180);
-          if (Number.isFinite(alt)) site.alt_m = clamp(alt, -500, 10000);
-        } catch {}
-      }
-      renderSiteInputs();
-    }
-
-    function saveSiteFromInputs() {
-      const lat = clamp(readNumberOrDefault(siteLatInput, SITE_DEFAULT.lat_deg), -90, 90);
-      const lon = clamp(readNumberOrDefault(siteLonInput, SITE_DEFAULT.lon_deg), -180, 180);
-      const alt = clamp(readNumberOrDefault(siteAltInput, SITE_DEFAULT.alt_m), -500, 10000);
-
-      site.lat_deg = lat;
-      site.lon_deg = lon;
-      site.alt_m = alt;
-
-      renderSiteInputs();
-      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
-
-      // Time-dependent fields (LST / dawn / dusk) use site.lon/lat; refresh immediately
-      updateClock(true);
-
-      pushLog("ok", `SITE saved: lat=${lat.toFixed(4)} lon=${lon.toFixed(4)} alt=${Math.round(alt)}m`);
-    }
-
-    function resetSiteDefault() {
-      site = { ...SITE_DEFAULT };
-      renderSiteInputs();
-      try { localStorage.setItem(LS_SITE, JSON.stringify(site)); } catch {}
-      updateClock(true);
-    }
-
-    // ===== Time extras (Epoch/JD/MJD) =====
-    function isLeapYear(y){ return (y%4===0 && y%100!==0) || (y%400===0); }
-    function dayOfYearLocal(d){
-      const start = new Date(d.getFullYear(),0,1);
-      return Math.floor((d - start)/86400000) + 1;
-    }
-    function decimalYearLocal(d){
-      const y = d.getFullYear();
-      const days = isLeapYear(y) ? 366 : 365;
-      const doy = dayOfYearLocal(d);
-      const fracDay = (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds())/86400;
-      return y + ((doy-1) + fracDay)/days;
-    }
-    function julianDateFromMs(ms){
-      // Unix epoch corresponds to JD 2440587.5
-      return ms/86400000 + 2440587.5;
-    }
-
-    // ===== Astronomical twilight (NOAA-style sunrise equation; zenith 108°) =====
-    function deg2rad(x){ return x*Math.PI/180; }
-    function rad2deg(x){ return x*180/Math.PI; }
-    function normalizeDeg(x){ x = x % 360; return x < 0 ? x + 360 : x; }
-    function normalizeHours(x){ x = x % 24; return x < 0 ? x + 24 : x; }
-
-    function sunriseEquationUtcMinutes(dateLocalMidnight, latDeg, lonDeg, zenithDeg, isSunrise){
-      const N = dayOfYearLocal(dateLocalMidnight);
-      const lngHour = lonDeg / 15.0;
-
-      const t = N + ((isSunrise ? 6 : 18) - lngHour) / 24.0;
-      const M = (0.9856 * t) - 3.289;
-      let L = M + (1.916 * Math.sin(deg2rad(M))) + (0.020 * Math.sin(deg2rad(2*M))) + 282.634;
-      L = normalizeDeg(L);
-
-      let RA = rad2deg(Math.atan(0.91764 * Math.tan(deg2rad(L))));
-      RA = normalizeDeg(RA);
-      const Lquadrant  = Math.floor(L/90) * 90;
-      const RAquadrant = Math.floor(RA/90) * 90;
-      RA = RA + (Lquadrant - RAquadrant);
-      RA = RA / 15.0;
-
-      const sinDec = 0.39782 * Math.sin(deg2rad(L));
-      const cosDec = Math.cos(Math.asin(sinDec));
-
-      const cosH = (Math.cos(deg2rad(zenithDeg)) - (sinDec * Math.sin(deg2rad(latDeg)))) / (cosDec * Math.cos(deg2rad(latDeg)));
-      if (cosH > 1) return NaN;
-      if (cosH < -1) return NaN;
-
-      let H = isSunrise ? (360 - rad2deg(Math.acos(cosH))) : rad2deg(Math.acos(cosH));
-      H = H / 15.0;
-
-      const T = H + RA - (0.06571 * t) - 6.622;
-      let UT = T - lngHour; // hours
-      UT = normalizeHours(UT);
-
-      return UT * 60.0;
-    }
-
-    function minutesUtcToLocalHM(dateLocalMidnight, utcMinutes){
-      if (!Number.isFinite(utcMinutes)) return "N/A";
-      const baseUtc = new Date(Date.UTC(dateLocalMidnight.getFullYear(), dateLocalMidnight.getMonth(), dateLocalMidnight.getDate(), 0, 0, 0));
-      const dt = new Date(baseUtc.getTime() + utcMinutes*60000);
-      return fmtHMS(dt.getHours(), dt.getMinutes(), 0).slice(0,5);
-    }
-
-    let _lastTwilightKey = null;
-    function updateTwilight(nowRef, force=false){
-      const now = nowRef || getNowRef();
-      const key = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-      if (!force && _lastTwilightKey === key) return;
-      _lastTwilightKey = key;
-
-      const lat = Number(site.lat_deg);
-      const lon = Number(site.lon_deg);
-      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0);
-
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        if (timeDawnSpan) timeDawnSpan.textContent = "N/A";
-        if (timeDuskSpan) timeDuskSpan.textContent = "N/A";
+      if (DESKTOP_MODE && img.dataset.fallbackApplied === "1" && img.src === fb) {
         return;
       }
 
-      const zenithAstro = 108.0; // 90 + 18
-      const dawnMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, true);
-      const duskMin = sunriseEquationUtcMinutes(localMidnight, lat, lon, zenithAstro, false);
+      img.src = DESKTOP_MODE
+        ? fb
+        : fb + (UI_LATEST_FALLBACK_REL.includes("?") ? "&" : "?") + "t=" + Date.now();
 
-      if (timeDawnSpan) timeDawnSpan.textContent = minutesUtcToLocalHM(localMidnight, dawnMin);
-      if (timeDuskSpan) timeDuskSpan.textContent = minutesUtcToLocalHM(localMidnight, duskMin);
-    }
+      img.dataset.fallbackApplied = "1";
+    });
+  }
 
-    function updateClock(force=false) {
-      const now = getNowRef();
+  function abortableFetch(url, timeoutMs) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    return fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(t));
+  }
 
-      if (timeLocalSpan) timeLocalSpan.textContent = fmtHMS(now.getHours(), now.getMinutes(), now.getSeconds());
-      if (timeUtcSpan) timeUtcSpan.textContent = fmtHMS(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-      if (timeLstSpan) timeLstSpan.textContent = hoursToHMSString(lstInHours(now, site.lon_deg));
+  async function updateCamera(role, urlPath, imgEls, metaEls, pillEl) {
+    const imgs = (imgEls || []).filter(Boolean);
+    const metas = (metaEls || []).filter(Boolean);
+    if (imgs.length === 0 && metas.length === 0 && !pillEl) return;
 
-      if (timeDateSpan) timeDateSpan.textContent = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-      if (timeEpochSpan) timeEpochSpan.textContent = decimalYearLocal(now).toFixed(5);
+    const url = apiBase + urlPath + (urlPath.includes("?") ? "&" : "?") + "t=" + Date.now();
 
-      const jd = julianDateFromMs(now.getTime());
-      if (timeJdSpan) timeJdSpan.textContent = jd.toFixed(5);
-      if (timeMjdSpan) timeMjdSpan.textContent = (jd - 2400000.5).toFixed(5);
+    const t0 = performance.now();
+    try {
+      const resp = await abortableFetch(url, CAM_FETCH_TIMEOUT_MS);
+      const ms = Math.round(performance.now() - t0);
 
-      updateTwilight(now, force);
-    }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-    // ===== Connection UI =====
-    function setConnection(ok) {
-      connectionOk = !!ok;
-      if (ok) {
-        connectionDot.classList.remove("badge-dot--error");
-        connectionDot.classList.add("badge-dot--ok");
-        connectionText.textContent = "已连接";
-      } else {
-        connectionDot.classList.remove("badge-dot--ok");
-        connectionDot.classList.add("badge-dot--error");
-        connectionText.textContent = "异常/离线";
-      }
-      renderOperatorView();
-    }
-
-    function updateConnMetrics() {
-      const rtt = lastRttMs == null ? "—" : `${Math.round(lastRttMs)}ms`;
-      const ok = lastOkAt == null ? "—" : fmtTime(lastOkAt).slice(0, 12);
-      const poll = `${(pollDelayMs / 1000).toFixed(1)}s`;
-      connMetrics.textContent = `RTT ${rtt} · OK ${ok} · FAIL ${failCount} · ${poll}`;
-    }
-
-    // ===== Fetch helper (timeout + ok check) =====
-    async function apiRequest(path, { method = "GET", json = null } = {}) {
-      let url = "";
-      try {
-        url = new URL(path, apiBase).toString();
-      } catch {
-        url = `${apiBase}${path}`;
-      }
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-      const t0 = performance.now();
-      try {
-        const resp = await fetch(url, {
-          method,
-          headers: json ? { "Content-Type": "application/json" } : undefined,
-          body: json ? JSON.stringify(json) : undefined,
-          signal: controller.signal,
-        });
-        const t1 = performance.now();
-        lastRttMs = t1 - t0;
-
-        const text = await resp.text();
-        let data = null;
-        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
-        if (!resp.ok) {
-          const detail = (data && typeof data === "object" && data.detail) ? data.detail : data;
-          throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
-        }
-
-        return data;
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    // ===== Capabilities rendering =====
-    function capRow(name, ok, desc) {
-      const tr = document.createElement("tr");
-      const td1 = document.createElement("td");
-      const td2 = document.createElement("td");
-      const td3 = document.createElement("td");
-      td1.textContent = name;
-      td2.innerHTML = ok
-        ? `<span class="pill-soft pill-ok">AVAILABLE</span>`
-        : `<span class="pill-soft pill-na">N/A</span>`;
-      td3.textContent = desc;
-      tr.appendChild(td1);
-      tr.appendChild(td2);
-      tr.appendChild(td3);
-      return tr;
-    }
-
-    function applyCapabilities(cap) {
-      lastCapabilities = cap || null;
-
-      const flags = cap || {};
-      const map = {
-        "狭缝 (slit)": { key: "slit", desc: "狭缝宽度设置与回读" },
-        "狭缝方向 (slit_angle)": { key: "slit_angle", desc: "狭缝方向/角度设置与回读（新增）" },
-                "定标灯 (calib_lamps)": { key: "calib_lamps", desc: "主定标灯开关（多光源后续扩展）" },
-                "狭缝监测相机": { key: "slit_monitor_camera", desc: "狭缝监测相机（本 Sprint 占位）" },
-        "偏置导星": { key: "guider", desc: "导星相机/闭环（本 Sprint 占位）" },
-        "三通道相机 B/G/R": { key: "science_channels_bgr", desc: "曝光/快门控制（本 Sprint 占位）" },
-      };
-
-      if (capTableBody) {
-        capTableBody.innerHTML = "";
-        for (const [title, item] of Object.entries(map)) {
-          const ok = !!flags[item.key];
-          capTableBody.appendChild(capRow(title, ok, item.desc));
-        }
-      }
-
-      const disableByTab = {
-                guiding: !flags.guider,
-        cameras: !flags.science_channels_bgr,
-      };
-
-      tabs.forEach((t) => {
-        const tab = t.getAttribute("data-tab");
-        if (tab in disableByTab) {
-          t.disabled = disableByTab[tab];
-          t.title = t.disabled ? "当前 HAL/实现未启用该模块（capabilities=false）" : "";
-        }
-      });
-
-      if (slitCapPill) slitCapPill.textContent = `cap: slit=${!!flags.slit}`;
-      if (calCapPill) calCapPill.textContent = `cap: calib_lamps=${!!flags.calib_lamps}`;
-      if (guidingCapPill) guidingCapPill.textContent = `cap: guider=${!!flags.guider}`;
-      if (camerasCapPill) camerasCapPill.textContent = `cap: science_channels_bgr=${!!flags.science_channels_bgr}`;
-      renderOperatorView();
-    }
-
-    // ===== State rendering =====
-    // Unused helpers (kept for future; safe to delete later if you want)
-    // function umToArcsec(um) { if (!Number.isFinite(um)) return null; return um / SLIT_SCALE_UM_PER_ARCSEC; }
-    // function fmtBool(b) { return b ? "true" : "false"; }
-
-    function deriveViewModel(state, meta, capabilities) {
-      const st = state || {};
-      const mt = meta || {};
-
-      const slitUm = Number(st.slit_width_um);
-      const slitUmOk = Number.isFinite(slitUm);
-      const slitArc = slitUmOk ? (slitUm / SLIT_SCALE_UM_PER_ARCSEC) : NaN;
-      const slitArcOk = Number.isFinite(slitArc);
-
-      const slitAngleDeg = Number(st.slit_angle_deg);
-      const slitAngleOk = Number.isFinite(slitAngleDeg);
-      const lampOn = !!st.lamp_on;
-
-      const tempC = Number(st.temperature_c);
-      const tempOk = Number.isFinite(tempC);
-
-      const source = (mt.run_mode || mt.hal) ? `${mt.run_mode || "—"} / ${mt.hal || "—"}` : "—";
-      const serverUtc = mt.timestamp_utc ? mt.timestamp_utc : "—";
-
-      const chipSlitText = slitUmOk
-        ? `${slitUm.toFixed(1)} μm  (${slitArcOk ? `${slitArc.toFixed(2)}"` : "—"})`
-        : "—";
-
-      return {
-        chipSlitText,
-        chipSlitAngleText: slitAngleOk ? `${slitAngleDeg.toFixed(0)}°` : "—",
-        chipLampText: lampOn ? "ON" : "OFF",
-        chipTempText: tempOk ? `${tempC.toFixed(1)} ℃` : "—",
-        chipSourceText: source,
-        chipServerUtcText: serverUtc,
-
-        pillRunmodeText: `RUN_MODE ${mt.run_mode ? mt.run_mode : "—"}`,
-        pillHalText: `HAL ${mt.hal ? mt.hal : "—"}`,
-
-        kvSlitUmText: slitUmOk ? `${slitUm.toFixed(3)} μm` : "—",
-        kvSlitArcsecText: slitArcOk ? `${slitArc.toFixed(4)} arcsec` : "—",
-        kvLampText: lampOn ? "true" : "false",
-        kvTempText: tempOk ? `${tempC.toFixed(3)} ℃` : "—",
-
-        slitReadbackText: slitUmOk ? `${slitUm.toFixed(1)} μm` : "—",
-        slitReadbackHintText: slitArcOk ? `≈ ${slitArc.toFixed(2)} arcsec` : "—",
-
-        rawText: JSON.stringify({ state: st, meta: mt, capabilities }, null, 2),
-      };
-    }
-
-    function renderState(state, meta) {
-      lastState = state || null;
-      lastMeta = meta || null;
-      if (!state) return;
-
-      // Sync time baseline from backend UTC if available (best-effort, non-blocking)
-      syncTimeFromMeta(meta);
-
-      const vm = deriveViewModel(state, meta, lastCapabilities);
-
-      if (chipSlit) chipSlit.textContent = vm.chipSlitText;
-      if (chipSlitAngle) chipSlitAngle.textContent = vm.chipSlitAngleText;
-      if (chipLamp) chipLamp.textContent = vm.chipLampText;
-      if (chipTemp) chipTemp.textContent = vm.chipTempText;
-      if (chipSource) chipSource.textContent = vm.chipSourceText;
-      if (chipServerUtc) chipServerUtc.textContent = vm.chipServerUtcText;
-
-      if (pillRunmode) pillRunmode.textContent = vm.pillRunmodeText;
-      if (pillHal) pillHal.textContent = vm.pillHalText;
-
-      if (kvSlitUm) kvSlitUm.textContent = vm.kvSlitUmText;
-      if (kvSlitArcsec) kvSlitArcsec.textContent = vm.kvSlitArcsecText;
-      if (kvLamp) kvLamp.textContent = vm.kvLampText;
-      if (kvTemp) kvTemp.textContent = vm.kvTempText;
-
-
-      if (slitReadback) slitReadback.textContent = vm.slitReadbackText;
-      if (slitReadbackHint) slitReadbackHint.textContent = vm.slitReadbackHintText;
-
-      if (statusRawPre) statusRawPre.textContent = vm.rawText;
-
-      renderOperatorStatus(state, meta);
-    }
-
-
-    // ===== Camera polling (latest frame, no-save) =====
-    let camTimer = null;
-
-    function uiAssetUrl(relPath) {
-      try { return new URL(relPath, window.location.href).toString(); } catch { return relPath; }
-    }
-
-    function setFallbackImages(imgEls) {
-      const imgs = (imgEls || []).filter(Boolean);
-      const fb = uiAssetUrl(UI_LATEST_FALLBACK_REL) + (UI_LATEST_FALLBACK_REL.includes("?") ? "&" : "?") + "t=" + Date.now();
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
 
       imgs.forEach((img) => {
-        try {
-          const old = img.dataset.objurl || "";
-          if (old && String(old).startsWith("blob:")) URL.revokeObjectURL(old);
-        } catch {}
-        try { delete img.dataset.objurl; } catch {}
-        img.src = fb;
+        const old = img.dataset.objurl || "";
+        img.onload = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
+        img.onerror = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
+        img.src = objUrl;
+        img.dataset.objurl = objUrl;
+        img.dataset.fallbackApplied = "0";
       });
+
+      const ts = fmtTime(new Date());
+      metas.forEach((m) => m.textContent = `Last: ${ts}  (${ms} ms)`);
+      if (pillEl) pillEl.textContent = `${role}: OK`;
+    } catch (e) {
+      const ts = fmtTime(new Date());
+      const emsg = String(e && e.message ? e.message : e);
+      metas.forEach((m) => m.textContent = `DEMO @ ${ts}: ${emsg}`);
+      if (pillEl) pillEl.textContent = `${role}: DEMO`;
+      setFallbackImages(imgs);
+    }
+  }
+
+  function stopCameraPolling() {
+    if (camTimer !== null) {
+      clearTimeout(camTimer);
+    }
+    camTimer = null;
+    camBusy = false;
+  }
+
+  async function cameraTick() {
+    if (camTimer === null) return;
+    if (camBusy) return;
+
+    if (document.visibilityState !== "visible") {
+      camTimer = setTimeout(cameraTick, CAM_POLL_MS);
+      return;
     }
 
+    camBusy = true;
+    try {
+      const activeTab = getActiveTabName();
 
-    function abortableFetch(url, timeoutMs) {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), timeoutMs);
-      return fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(t));
-    }
-
-    async function updateCamera(role, urlPath, imgEls, metaEls, pillEl) {
-      const imgs = (imgEls || []).filter(Boolean);
-      const metas = (metaEls || []).filter(Boolean);
-      if (imgs.length === 0 && metas.length === 0 && !pillEl) return;
-
-      const url = apiBase + urlPath + (urlPath.includes("?") ? "&" : "?") + "t=" + Date.now();
-
-      const t0 = performance.now();
-      try {
-        const resp = await abortableFetch(url, CAM_FETCH_TIMEOUT_MS);
-        const ms = Math.round(performance.now() - t0);
-
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const blob = await resp.blob();
-        const objUrl = URL.createObjectURL(blob);
-
-        imgs.forEach((img) => {
-          const old = img.dataset.objurl || "";
-          img.onload = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
-          img.onerror = () => { try { if (old) URL.revokeObjectURL(old); } catch {} };
-          img.src = objUrl;
-          img.dataset.objurl = objUrl;
-        });
-
-        const ts = fmtTime(new Date());
-        metas.forEach((m) => m.textContent = `Last: ${ts}  (${ms} ms)`);
-        if (pillEl) pillEl.textContent = `${role}: OK`;
-      } catch (e) {
-        const ts = fmtTime(new Date());
-        const emsg = String(e && e.message ? e.message : e);
-        metas.forEach((m) => m.textContent = `DEMO @ ${ts}: ${emsg}`);
-        if (pillEl) pillEl.textContent = `${role}: DEMO`;
-        setFallbackImages(imgs);
-      }
-    }
-
-    function stopCameraPolling() {
-      if (camTimer) clearInterval(camTimer);
-      camTimer = null;
-    }
-
-    function startCameraPolling() {
-      stopCameraPolling();
-      camTimer = setInterval(async () => {
-        if (document.visibilityState !== "visible") return;
-
+      if (activeTab === "overview") {
         await updateCamera("slitcam", "/api/v1/camera/slit/latest.jpg",
-          [slitcamImg, slitcamImg2],
-          [slitcamMeta, slitcamMeta2],
+          [slitcamImg],
+          [slitcamMeta],
           slitcamPill);
 
-        // B/G/R
         await updateCamera("B", "/api/v1/camera/b/latest.jpg",
-          [bgrImgB, bgrImgB2],
-          [bgrMetaB, bgrMetaB2],
+          [bgrImgB],
+          [bgrMetaB],
           null);
         await updateCamera("G", "/api/v1/camera/g/latest.jpg",
-          [bgrImgG, bgrImgG2],
-          [bgrMetaG, bgrMetaG2],
+          [bgrImgG],
+          [bgrMetaG],
           null);
         await updateCamera("R", "/api/v1/camera/r/latest.jpg",
-          [bgrImgR, bgrImgR2],
-          [bgrMetaR, bgrMetaR2],
+          [bgrImgR],
+          [bgrMetaR],
           null);
 
         if (bgrPill) bgrPill.textContent = "bgr: polling";
-      }, CAM_POLL_MS);
+      } else if (activeTab === "slit") {
+        await updateCamera("slitcam", "/api/v1/camera/slit/latest.jpg",
+          [slitcamImg2],
+          [slitcamMeta2],
+          slitcamPill);
+      } else if (activeTab === "cameras") {
+        await updateCamera("B", "/api/v1/camera/b/latest.jpg",
+          [bgrImgB2],
+          [bgrMetaB2],
+          null);
+        await updateCamera("G", "/api/v1/camera/g/latest.jpg",
+          [bgrImgG2],
+          [bgrMetaG2],
+          null);
+        await updateCamera("R", "/api/v1/camera/r/latest.jpg",
+          [bgrImgR2],
+          [bgrMetaR2],
+          null);
+
+        if (bgrPill) bgrPill.textContent = "bgr: polling";
+      }
+    } finally {
+      camBusy = false;
+      if (camTimer !== null) {
+        camTimer = setTimeout(cameraTick, CAM_POLL_MS);
+      }
+    }
+  }
+
+  function startCameraPolling() {
+    if (camTimer !== null) return;
+    camTimer = setTimeout(cameraTick, 0);
+  }
+
+  // ===== Polling =====
+  function stopPolling() {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+
+  function schedulePoll(nextDelayMs) {
+    stopPolling();
+    pollDelayMs = Math.max(POLL_MIN_MS, Math.min(POLL_MAX_MS, nextDelayMs));
+    updateConnMetrics();
+    pollTimer = setTimeout(pollOnce, pollDelayMs);
+  }
+
+  async function pollOnce() {
+    if (document.visibilityState !== "visible") {
+      stopCameraPolling();
+      schedulePoll(POLL_MAX_MS);
+      return;
     }
 
+    try {
+      const data = await apiRequest("/api/v1/status/full", { method: "GET" });
+      const state = data && data.state ? data.state : data;
+      const cap = data && data.capabilities ? data.capabilities : null;
 
-    // ===== Polling =====
-    function stopPolling() {
-      if (pollTimer) clearTimeout(pollTimer);
-      pollTimer = null;
-    }
-
-    function schedulePoll(nextDelayMs) {
-      stopPolling();
-      pollDelayMs = Math.max(POLL_MIN_MS, Math.min(POLL_MAX_MS, nextDelayMs));
+      lastOkAt = new Date();
+      failCount = 0;
+      setConnection(true);
       updateConnMetrics();
-      pollTimer = setTimeout(pollOnce, pollDelayMs);
-    }
 
-    async function pollOnce() {
-      if (document.visibilityState !== "visible") {
-        stopCameraPolling();
-        schedulePoll(POLL_MAX_MS);
-        return;
+      if (cap) applyCapabilities(cap);
+
+      renderState(state, {
+        hal: data.hal,
+        run_mode: data.run_mode,
+        timestamp_utc: data.timestamp_utc,
+      });
+
+      if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)}`;
+
+      if (!DESKTOP_MODE) {
+        pushLog("ok", `GET /api/v1/status/full (${Math.round(lastRttMs)}ms)`);
       }
 
-      startCameraPolling();
-
+      schedulePoll(POLL_MIN_MS);
+    } catch (e1) {
       try {
-        const data = await apiRequest("/api/v1/status/full", { method: "GET" });
-        const state = data && data.state ? data.state : data;
-        const cap = data && data.capabilities ? data.capabilities : null;
+        const st = await apiRequest("/api/v1/status", { method: "GET" });
 
         lastOkAt = new Date();
         failCount = 0;
         setConnection(true);
         updateConnMetrics();
 
-        if (cap) applyCapabilities(cap);
+        renderState(st, { hal: "—", run_mode: "—", timestamp_utc: "—" });
 
-        renderState(state, {
-          hal: data.hal,
-          run_mode: data.run_mode,
-          timestamp_utc: data.timestamp_utc,
-        });
+        if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)} (fallback)`;
 
-        if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)}`;
-
-        pushLog("ok", `GET /api/v1/status/full (${Math.round(lastRttMs)}ms)`);
-        schedulePoll(POLL_MIN_MS);
-      } catch (e1) {
-        try {
-          const st = await apiRequest("/api/v1/status", { method: "GET" });
-
-          lastOkAt = new Date();
-          failCount = 0;
-          setConnection(true);
-          updateConnMetrics();
-
-          renderState(st, { hal: "—", run_mode: "—", timestamp_utc: "—" });
-
-          if (statusFreshness) statusFreshness.textContent = `Last OK: ${fmtTime(lastOkAt)} (fallback)`;
-
+        if (!DESKTOP_MODE) {
           pushLog("ok", `GET /api/v1/status fallback (${Math.round(lastRttMs)}ms)`);
-          schedulePoll(POLL_MIN_MS);
-        } catch (e2) {
-          failCount += 1;
-          setConnection(false);
-          updateConnMetrics();
-          pushLog("error", `poll failed: ${String(e2 && e2.message ? e2.message : e2)}`);
-          schedulePoll(Math.min(POLL_MAX_MS, pollDelayMs * 2));
         }
+
+        schedulePoll(POLL_MIN_MS);
+      } catch (e2) {
+        failCount += 1;
+        setConnection(false);
+        updateConnMetrics();
+        pushLog("error", `poll failed: ${String(e2 && e2.message ? e2.message : e2)}`);
+        schedulePoll(Math.min(POLL_MAX_MS, pollDelayMs * 2));
+      }
+    }
+  }
+
+  async function manualRefresh() {
+    pushLog("info", "manual refresh");
+    if (document.visibilityState === "visible") {
+      stopCameraPolling();
+      startCameraPolling();
+    }
+    schedulePoll(POLL_MIN_MS);
+  }
+
+  // ===== Commands =====
+  function parseNumber(id) {
+    const el = document.getElementById(id);
+    const v = Number(el.value);
+    if (!Number.isFinite(v)) throw new Error("不是有效数字");
+    return v;
+  }
+
+  function setBusy(btn, busy, label, busyLabel) {
+    btn.disabled = busy;
+    btn.textContent = busy ? busyLabel : label;
+  }
+
+  async function cmdSetSlit(widthValue, unit) {
+    let widthUm = widthValue;
+    if (unit === "arcsec") widthUm = widthValue * SLIT_SCALE_UM_PER_ARCSEC;
+
+    if (!(widthUm > 0 && widthUm <= 5000)) {
+      throw new Error(`width_um 超出范围：${widthUm.toFixed(1)}（要求 0 < x ≤ 5000）`);
+    }
+
+    pushLog("info", `UI→API POST /api/v1/slit width_um=${widthUm.toFixed(1)}`);
+    const data = await apiRequest("/api/v1/slit", { method: "POST", json: { width_um: widthUm } });
+    pushLog("ok", `API→UI slit applied (${Math.round(lastRttMs)}ms)`);
+    renderState(data, lastMeta || {});
+    schedulePoll(POLL_MIN_MS);
+  }
+
+  async function cmdSetSlitAngle(angleDeg) {
+    if (!(angleDeg >= -90 && angleDeg <= 90)) {
+      throw new Error(`angle_deg 超出范围：${angleDeg}（要求 -90 ≤ x ≤ 90）`);
+    }
+    pushLog("info", `UI→API POST /api/v1/slit_angle angle_deg=${angleDeg}`);
+    const data = await apiRequest("/api/v1/slit_angle", { method: "POST", json: { angle_deg: angleDeg } });
+    pushLog("ok", `API→UI slit_angle applied (${Math.round(lastRttMs)}ms)`);
+    renderState(data, lastMeta || {});
+    schedulePoll(POLL_MIN_MS);
+  }
+
+  async function cmdSetLamp(on) {
+    pushLog("info", `UI→API POST /api/v1/lamp on=${on}`);
+    const data = await apiRequest("/api/v1/lamp", { method: "POST", json: { on } });
+    pushLog("ok", `API→UI lamp applied (${Math.round(lastRttMs)}ms)`);
+    renderState(data, lastMeta || {});
+    schedulePoll(POLL_MIN_MS);
+  }
+
+  // ===== API base =====
+  function normalizeBase(s) {
+    let t = (s || "").trim();
+    if (!t) return window.location.origin;
+
+    if (!/^https?:\/\//i.test(t)) {
+      if (t.startsWith("//")) {
+        t = window.location.protocol + t;
+      } else if (t.startsWith("/")) {
+        t = window.location.origin + t;
+      } else {
+        t = window.location.protocol + "//" + t;
       }
     }
 
-    async function manualRefresh() {
-      pushLog("info", "manual refresh");
-      schedulePoll(POLL_MIN_MS);
-    }
+    t = t.replace(/\/+$/, "");
+    return t;
+  }
 
-    // ===== Commands =====
-    function parseNumber(id) {
-      const el = document.getElementById(id);
-      const v = Number(el.value);
-      if (!Number.isFinite(v)) throw new Error("不是有效数字");
-      return v;
-    }
+  function setApiBase(nextBase) {
+    apiBase = normalizeBase(nextBase);
+    apiBaseInput.value = apiBase;
+    pushLog("info", `API base set to ${apiBase}`);
 
-    function setBusy(btn, busy, label, busyLabel) {
-      btn.disabled = busy;
-      btn.textContent = busy ? busyLabel : label;
-    }
+    lastOkAt = null;
+    lastRttMs = null;
+    failCount = 0;
+    setConnection(false);
+    updateConnMetrics();
+    schedulePoll(POLL_MIN_MS);
+  }
 
-    async function cmdSetSlit(widthValue, unit) {
-      let widthUm = widthValue;
-      if (unit === "arcsec") widthUm = widthValue * SLIT_SCALE_UM_PER_ARCSEC;
+  function loadApiBase() {
+    let stored = null;
+    try { stored = localStorage.getItem(LS_API_BASE); } catch {}
+    const def = window.location.origin;
+    setApiBase(stored ? stored : def);
+  }
 
-      if (!(widthUm > 0 && widthUm <= 5000)) {
-        throw new Error(`width_um 超出范围：${widthUm.toFixed(1)}（要求 0 < x ≤ 5000）`);
-      }
+  // ===== Wire events =====
+  if (refreshStatusBtn) refreshStatusBtn.addEventListener("click", manualRefresh);
+  if (quickRefreshBtn) quickRefreshBtn.addEventListener("click", manualRefresh);
 
-      pushLog("info", `UI→API POST /api/v1/slit width_um=${widthUm.toFixed(1)}`);
-      const data = await apiRequest("/api/v1/slit", { method: "POST", json: { width_um: widthUm } });
-      pushLog("ok", `API→UI slit applied (${Math.round(lastRttMs)}ms)`);
-      renderState(data, lastMeta || {});
-      schedulePoll(POLL_MIN_MS);
-    }
+  if (copyLogBtn) copyLogBtn.addEventListener("click", copyLogs);
+  if (logsCopyBtn) logsCopyBtn.addEventListener("click", copyLogs);
 
-    async function cmdSetSlitAngle(angleDeg) {
-      if (!(angleDeg >= -90 && angleDeg <= 90)) {
-        throw new Error(`angle_deg 超出范围：${angleDeg}（要求 -90 ≤ x ≤ 90）`);
-      }
-      pushLog("info", `UI→API POST /api/v1/slit_angle angle_deg=${angleDeg}`);
-      const data = await apiRequest("/api/v1/slit_angle", { method: "POST", json: { angle_deg: angleDeg } });
-      pushLog("ok", `API→UI slit_angle applied (${Math.round(lastRttMs)}ms)`);
-      renderState(data, lastMeta || {});
-      schedulePoll(POLL_MIN_MS);
-    }
+  if (clearLogBtn) clearLogBtn.addEventListener("click", clearLogs);
+  if (logsClearBtn) logsClearBtn.addEventListener("click", clearLogs);
 
-
-    async function cmdSetLamp(on) {
-      pushLog("info", `UI→API POST /api/v1/lamp on=${on}`);
-      const data = await apiRequest("/api/v1/lamp", { method: "POST", json: { on } });
-      pushLog("ok", `API→UI lamp applied (${Math.round(lastRttMs)}ms)`);
-      renderState(data, lastMeta || {});
-      schedulePoll(POLL_MIN_MS);
-    }
-
-    // ===== API base handling =====
-    function normalizeBase(s) {
-      let t = (s || "").trim();
-      if (!t) return window.location.origin;
-
-      if (!/^https?:\/\//i.test(t)) {
-        if (t.startsWith("//")) {
-          t = window.location.protocol + t;
-        } else if (t.startsWith("/")) {
-          t = window.location.origin + t;
-        } else {
-          t = window.location.protocol + "//" + t;
-        }
-      }
-
-      t = t.replace(/\/+$/, "");
-      return t;
-    }
-
-    function setApiBase(nextBase) {
-      apiBase = normalizeBase(nextBase);
-      apiBaseInput.value = apiBase;
-      pushLog("info", `API base set to ${apiBase}`);
-
-      lastOkAt = null;
-      lastRttMs = null;
-      failCount = 0;
-      setConnection(false);
-      updateConnMetrics();
-      schedulePoll(POLL_MIN_MS);
-    }
-
-    function loadApiBase() {
-      let stored = null;
-      try { stored = localStorage.getItem(LS_API_BASE); } catch {}
-      const def = window.location.origin;
-      setApiBase(stored ? stored : def);
-    }
-
-    // ===== Wire events =====
-    refreshStatusBtn.addEventListener("click", manualRefresh);
-    if (quickRefreshBtn) quickRefreshBtn.addEventListener("click", manualRefresh);
-
-    if (copyLogBtn) copyLogBtn.addEventListener("click", copyLogs);
-    if (logsCopyBtn) logsCopyBtn.addEventListener("click", copyLogs);
-
-    if (clearLogBtn) clearLogBtn.addEventListener("click", clearLogs);
-    if (logsClearBtn) logsClearBtn.addEventListener("click", clearLogs);
-
+  if (apiBaseSaveBtn) {
     apiBaseSaveBtn.addEventListener("click", () => {
       const v = normalizeBase(apiBaseInput.value);
       try { localStorage.setItem(LS_API_BASE, v); } catch {}
       setApiBase(v);
     });
+  }
 
+  if (apiBaseResetBtn) {
     apiBaseResetBtn.addEventListener("click", () => {
       try { localStorage.removeItem(LS_API_BASE); } catch {}
       setApiBase(window.location.origin);
     });
+  }
 
-    if (slitForm) {
-      slitForm.addEventListener("submit", async (evt) => {
-        evt.preventDefault();
-        setBusy(slitSubmitBtn, true, "应用", "发送中...");
-        try {
-          const width = parseNumber("slit-width");
-          const unit = slitUnit.value;
-          await cmdSetSlit(width, unit);
-        } catch (e) {
-          pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
-        } finally {
-          setBusy(slitSubmitBtn, false, "应用", "发送中...");
-        }
-      });
-    }
-
-    if (slitForm2) {
-      slitForm2.addEventListener("submit", async (evt) => {
-        evt.preventDefault();
-        setBusy(slit2SubmitBtn, true, "应用", "发送中...");
-        try {
-          const width = parseNumber("slit2-width");
-          const unit = document.getElementById("slit2-unit").value;
-          await cmdSetSlit(width, unit);
-        } catch (e) {
-          pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
-        } finally {
-          setBusy(slit2SubmitBtn, false, "应用", "发送中...");
-        }
-      });
-    }
-
-    if (slitAngleForm) {
-      slitAngleForm.addEventListener("submit", async (evt) => {
-        evt.preventDefault();
-        setBusy(slitAngleSubmitBtn, true, "应用", "发送中...");
-        try {
-          const angle = parseNumber("slit-angle-deg");
-          await cmdSetSlitAngle(angle);
-        } catch (e) {
-          pushLog("error", `slit_angle failed: ${String(e && e.message ? e.message : e)}`);
-        } finally {
-          setBusy(slitAngleSubmitBtn, false, "应用", "发送中...");
-        }
-      });
-    }
-
-    if (lampForm) {
-      lampForm.addEventListener("submit", async (evt) => {
-        evt.preventDefault();
-        setBusy(lampSubmitBtn, true, "应用", "发送中...");
-        try {
-          const on = document.getElementById("lamp-on").value === "true";
-          await cmdSetLamp(on);
-        } catch (e) {
-          pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
-        } finally {
-          setBusy(lampSubmitBtn, false, "应用", "发送中...");
-        }
-      });
-    }
-
-    if (lampForm2) {
-      lampForm2.addEventListener("submit", async (evt) => {
-        evt.preventDefault();
-        setBusy(lamp2SubmitBtn, true, "应用", "发送中...");
-        try {
-          const on = document.getElementById("lamp2-on").value === "true";
-          await cmdSetLamp(on);
-        } catch (e) {
-          pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
-        } finally {
-          setBusy(lamp2SubmitBtn, false, "应用", "发送中...");
-        }
-      });
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        pushLog("info", "page visible: resume polling");
-        schedulePoll(POLL_MIN_MS);
-      } else {
-        pushLog("info", "page hidden: slow down polling");
-        schedulePoll(POLL_MAX_MS);
+  if (slitForm) {
+    slitForm.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      setBusy(slitSubmitBtn, true, "应用", "发送中...");
+      try {
+        const width = parseNumber("slit-width");
+        const unit = slitUnit.value;
+        await cmdSetSlit(width, unit);
+      } catch (e) {
+        pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
+      } finally {
+        setBusy(slitSubmitBtn, false, "应用", "发送中...");
       }
     });
+  }
 
-    // ===== Init =====
-    window.addEventListener("error", (e) => {
-      try { pushLog("error", `JS error: ${e && e.message ? e.message : e}`); } catch {}
+  if (slitForm2) {
+    slitForm2.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      setBusy(slit2SubmitBtn, true, "应用", "发送中...");
+      try {
+        const width = parseNumber("slit2-width");
+        const unit = document.getElementById("slit2-unit").value;
+        await cmdSetSlit(width, unit);
+      } catch (e) {
+        pushLog("error", `slit failed: ${String(e && e.message ? e.message : e)}`);
+      } finally {
+        setBusy(slit2SubmitBtn, false, "应用", "发送中...");
+      }
     });
+  }
 
-    window.addEventListener("unhandledrejection", (e) => {
-      try { pushLog("error", `Promise rejection: ${String(e && e.reason ? e.reason : e)}`); } catch {}
+  if (slitAngleForm) {
+    slitAngleForm.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      setBusy(slitAngleSubmitBtn, true, "应用", "发送中...");
+      try {
+        const angle = parseNumber("slit-angle-deg");
+        await cmdSetSlitAngle(angle);
+      } catch (e) {
+        pushLog("error", `slit_angle failed: ${String(e && e.message ? e.message : e)}`);
+      } finally {
+        setBusy(slitAngleSubmitBtn, false, "应用", "发送中...");
+      }
     });
+  }
 
-    window.addEventListener("load", () => {
-      pushLog("info", "UI loaded");
+  if (lampForm) {
+    lampForm.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      setBusy(lampSubmitBtn, true, "应用", "发送中...");
+      try {
+        const on = document.getElementById("lamp-on").value === "true";
+        await cmdSetLamp(on);
+      } catch (e) {
+        pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
+      } finally {
+        setBusy(lampSubmitBtn, false, "应用", "发送中...");
+      }
+    });
+  }
 
-      // Theme: head script already applied theme class (FOUC fix).
-      // loadTheme() will sync toggle text/checked + ensure key migration.
-      loadTheme();
+  if (lampForm2) {
+    lampForm2.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      setBusy(lamp2SubmitBtn, true, "应用", "发送中...");
+      try {
+        const on = document.getElementById("lamp2-on").value === "true";
+        await cmdSetLamp(on);
+      } catch (e) {
+        pushLog("error", `lamp failed: ${String(e && e.message ? e.message : e)}`);
+      } finally {
+        setBusy(lamp2SubmitBtn, false, "应用", "发送中...");
+      }
+    });
+  }
 
-      loadSite();
-      updateClock(true);
-
-      if (themeToggle) themeToggle.addEventListener("change", () => applyTheme(themeToggle.checked ? "light" : "dark"));
-      if (themeText) themeText.addEventListener("click", () => applyTheme(document.documentElement.classList.contains("theme-light") ? "dark" : "light"));
-      if (siteSaveBtn) siteSaveBtn.addEventListener("click", saveSiteFromInputs);
-      if (siteResetBtn) siteResetBtn.addEventListener("click", resetSiteDefault);
-
-      document.querySelectorAll("[data-slit-preset]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const val = btn.getAttribute("data-slit-preset");
-          const slitWidth = document.getElementById("slit-width");
-          const slitUnit = document.getElementById("slit-unit");
-          if (slitWidth) slitWidth.value = val;
-          if (slitUnit) slitUnit.value = "arcsec";
-        });
-      });
-
-
-      document.querySelectorAll("[data-angle-preset]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const val = btn.getAttribute("data-angle-preset");
-          const angleEl = document.getElementById("slit-angle-deg");
-          if (angleEl) angleEl.value = val;
-        });
-      });
-
-      loadApiBase();
-      renderOperatorView();
-
-      // Seed local fallback image so <img> always has a valid src (ui/assets/latest.jpg)
-      setFallbackImages([slitcamImg, slitcamImg2, bgrImgB, bgrImgG, bgrImgR, bgrImgB2, bgrImgG2, bgrImgR2]);
-
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      pushLog("info", "page visible: resume polling");
       startCameraPolling();
-      setInterval(updateClock, 1000);
+      schedulePoll(POLL_MIN_MS);
+    } else {
+      pushLog("info", "page hidden: slow down polling");
+      stopCameraPolling();
+      schedulePoll(POLL_MAX_MS);
+    }
+  });
+
+  window.addEventListener("error", (e) => {
+    try { pushLog("error", `JS error: ${e && e.message ? e.message : e}`); } catch {}
+  });
+
+  window.addEventListener("unhandledrejection", (e) => {
+    try { pushLog("error", `Promise rejection: ${String(e && e.reason ? e.reason : e)}`); } catch {}
+  });
+
+  window.addEventListener("load", () => {
+    pushLog("info", "UI loaded");
+
+    loadTheme();
+    loadSite();
+    updateClock(true);
+
+    if (themeToggle) themeToggle.addEventListener("change", () => applyTheme(themeToggle.checked ? "light" : "dark"));
+    if (themeText) themeText.addEventListener("click", () => applyTheme(document.documentElement.classList.contains("theme-light") ? "dark" : "light"));
+    if (siteSaveBtn) siteSaveBtn.addEventListener("click", saveSiteFromInputs);
+    if (siteResetBtn) siteResetBtn.addEventListener("click", resetSiteDefault);
+
+    if (rawDetails) {
+      rawDetails.addEventListener("toggle", () => {
+        if (rawDetails.open && statusRawPre && lastState) {
+          statusRawPre.textContent = deriveViewModel(lastState, lastMeta, lastCapabilities).rawText;
+        }
+      });
+    }
+
+    document.querySelectorAll("[data-slit-preset]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-slit-preset");
+        const slitWidth = document.getElementById("slit-width");
+        const slitUnitEl = document.getElementById("slit-unit");
+        if (slitWidth) slitWidth.value = val;
+        if (slitUnitEl) slitUnitEl.value = "arcsec";
+      });
     });
-  </script>
+
+    document.querySelectorAll("[data-angle-preset]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-angle-preset");
+        const angleEl = document.getElementById("slit-angle-deg");
+        if (angleEl) angleEl.value = val;
+      });
+    });
+
+    loadApiBase();
+    renderOperatorView();
+
+    setFallbackImages([slitcamImg, slitcamImg2, bgrImgB, bgrImgG, bgrImgR, bgrImgB2, bgrImgG2, bgrImgR2]);
+
+    startCameraPolling();
+    setInterval(updateClock, 1000);
+  });
+</script>
 </body>
 </html>

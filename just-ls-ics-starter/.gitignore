@@ -1,44 +1,8 @@
-﻿# =========================
-# Python (monorepo-wide)
-# =========================
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-pip-wheel-metadata/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.cache/
-.pytype/
-.pyre/
-.dmypy.json
-dmypy.json
+﻿# Child project-specific ignores only.
+# Common Python / env / build / editor rules are handled by the repo root .gitignore.
 
-# Virtual environments / local env
-.venv/
-venv/
-ENV/
-.env
-.env.*
-.envrc
+# UI local backups / archives
+ui/_archive/
 
-# Build artifacts
-build/
-dist/
-*.spec
-
-# =========================
-# Docs build artifacts
-# =========================
-site/
-docs/site/
-
-# =========================
-# OS / Editors
-# =========================
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# Optional local scratch outputs specific to this package
+scripts/sweep_out/
