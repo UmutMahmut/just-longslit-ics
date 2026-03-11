@@ -1,24 +1,49 @@
-import os
-import sys
-import time
-import signal
-import socket
-import pathlib
-import subprocess
-import urllib.request
-import webview
+from __future__ import annotations
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-BACKEND_ROOT = REPO_ROOT / "just-ls-ics-starter"
-LOG_DIR = REPO_ROOT / "desktop_webview" / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+import socket
+import sys
+import threading
+import time
+import urllib.request
+from pathlib import Path
+
+import uvicorn
+import webview
+from fastapi.staticfiles import StaticFiles
+import justls.ics.api as ics_api
+
+app = ics_api.app
 
 HOST = "127.0.0.1"
 PORT = 8000
 BASE_URL = f"http://{HOST}:{PORT}"
 UI_URL = f"{BASE_URL}/ui/?desktop=1"
 
-backend_proc = None
+backend_server = None
+backend_thread = None
+
+
+def is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def bundle_dir() -> Path:
+    if is_frozen():
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[1]
+
+
+def ensure_ui_mount() -> None:
+    existing_paths = {getattr(route, "path", None) for route in app.routes}
+    if "/ui" in existing_paths:
+        return
+
+    ui_dir = bundle_dir() / "ui"
+    if ui_dir.is_dir() and (ui_dir / "index.html").is_file():
+        app.mount("/ui", StaticFiles(directory=str(ui_dir), html=True), name="ui-desktop")
+    else:
+        raise RuntimeError(f"UI directory missing for desktop runtime: {ui_dir}")
+
 
 def wait_http(url: str, timeout: float = 30.0) -> bool:
     t0 = time.time()
@@ -31,60 +56,58 @@ def wait_http(url: str, timeout: float = 30.0) -> bool:
             time.sleep(0.5)
     return False
 
+
 def is_port_open(host: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(0.5)
         return s.connect_ex((host, port)) == 0
 
-def start_backend():
-    global backend_proc
 
-    stdout_log = LOG_DIR / "backend_stdout.log"
-    stderr_log = LOG_DIR / "backend_stderr.log"
-
-    stdout_f = open(stdout_log, "w", encoding="utf-8")
-    stderr_f = open(stderr_log, "w", encoding="utf-8")
-
-    env = os.environ.copy()
-    env["PYTHONUNBUFFERED"] = "1"
-
-    cmd = [
-        sys.executable,
-        "-m",
-        "uvicorn",
-        "justls.ics.api:app",
-        "--app-dir",
-        str(BACKEND_ROOT / "src"),
-        "--host",
-        HOST,
-        "--port",
-        str(PORT),
-    ]
-    backend_proc = subprocess.Popen(
-        cmd,
-        cwd=str(BACKEND_ROOT),
-        stdout=stdout_f,
-        stderr=stderr_f,
-        env=env,
-    )
-
-def stop_backend():
-    global backend_proc
-    if backend_proc is None:
+class ThreadedUvicornServer(uvicorn.Server):
+    def install_signal_handlers(self) -> None:
         return
 
-    try:
-        backend_proc.terminate()
-        backend_proc.wait(timeout=5)
-    except Exception:
-        try:
-            backend_proc.kill()
-        except Exception:
-            pass
-    finally:
-        backend_proc = None
 
-def main():
+def start_backend() -> None:
+    global backend_server, backend_thread
+
+    if backend_thread is not None and backend_thread.is_alive():
+        return
+
+    ensure_ui_mount()
+
+    config = uvicorn.Config(
+        app=app,
+        host=HOST,
+        port=PORT,
+        log_level="info",
+        access_log=True,
+        reload=False,
+    )
+
+    backend_server = ThreadedUvicornServer(config=config)
+    backend_thread = threading.Thread(
+        target=backend_server.run,
+        name="uvicorn-backend",
+        daemon=True,
+    )
+    backend_thread.start()
+
+
+def stop_backend() -> None:
+    global backend_server, backend_thread
+
+    if backend_server is not None:
+        backend_server.should_exit = True
+
+    if backend_thread is not None and backend_thread.is_alive():
+        backend_thread.join(timeout=5)
+
+    backend_server = None
+    backend_thread = None
+
+
+def main() -> None:
     if not is_port_open(HOST, PORT):
         start_backend()
 
@@ -92,7 +115,10 @@ def main():
         stop_backend()
         raise RuntimeError(f"Backend/UI did not become ready: {UI_URL}")
 
-    window = webview.create_window(
+    webview.settings["REMOTE_DEBUGGING_PORT"] = 9222
+    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
+
+    webview.create_window(
         title="JUST 长缝光谱仪控制",
         url=UI_URL,
         width=1440,
@@ -100,13 +126,11 @@ def main():
         min_size=(1200, 800),
     )
 
-    webview.settings["REMOTE_DEBUGGING_PORT"] = 9222
-    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
-
     try:
         webview.start(gui="edgechromium", debug=True)
     finally:
         stop_backend()
+
 
 if __name__ == "__main__":
     main()
