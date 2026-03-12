@@ -8,6 +8,7 @@ This repository currently provides:
 - A versioned **FastAPI** backend with a stable v0.1 contract (`/api/v1/*`)
 - A **SimHAL** simulator enabling end-to-end operation without hardware
 - Static UI served by the backend at `/ui/` for zero-CORS local integration
+- A validated Windows desktop host path using **pywebview** + local backend embedding
 - A reproducible engineering pipeline: **demo script + pytest regression + GitHub Actions CI**
 - A maintenance sweep script (optional) to detect legacy endpoint references in code/docs
 
@@ -32,9 +33,18 @@ This repository currently provides:
   - Overview reworked into a “quad” layout (Quick control + SlitCam + B/G/R + Status)
   - Camera panels support a **static placeholder** image at `ui/assets/latest.jpg`
     - Used automatically when camera API is not available
+- **Sprint 4 (Desktop packaging baseline)**
+  - A Windows desktop launcher is now available at `desktop_webview/main.py`
+  - The desktop host starts or reuses the local backend, then opens the ICS UI in an embedded window
+  - Desktop runtime behavior has been validated for the current training/demo workflow
+  - A first working **PyInstaller onedir** packaging path has been verified for internal testing
 
 ### Next
-- **Sprint 4**: Packaging & distribution (training-friendly “double-click run” first; `.exe` later if needed)
+- **Sprint 5**: packaging hardening and release workflow
+  - Freeze build settings into a reusable spec/config
+  - Add release-oriented packaging notes (what to copy, how to test on another machine)
+  - Decide whether to publish internal zip packages / GitHub Releases
+- **Sprint 6**: functional upgrades on top of the current desktop-capable baseline
 
 ---
 
@@ -47,6 +57,8 @@ This repository currently provides:
   - `scripts/demo_flow.ps1` — one-click demo flow (PowerShell)
   - `tests/` — regression + optional stress tests
   - `docs/api/contract.md` — API contract (human-readable)
+- `desktop_webview/`
+  - `main.py` — Windows desktop launcher for the current UI/backend stack
 - `.github/workflows/ci.yml` — GitHub Actions CI (pytest)
 
 ---
@@ -79,6 +91,16 @@ python -m uvicorn justls.ics.api:app --host 127.0.0.1 --port 8000 --reload
 ### 3) Open in browser
 - Swagger UI: http://127.0.0.1:8000/docs
 - Static UI:  http://127.0.0.1:8000/ui/
+
+### 4) Optional desktop host (Windows, internal baseline)
+From repository root, run the desktop launcher:
+```powershell
+python .\desktop_webview\main.py
+```
+
+Notes:
+- The desktop host is intended for local/internal use during the current packaging stage.
+- For packaged desktop testing, distribute/copy the whole generated application folder rather than only a single `.exe`.
 
 ---
 
@@ -131,6 +153,20 @@ Notes:
 
 ---
 
+## Desktop packaging notes (internal)
+
+Current validated direction:
+- Desktop host: `desktop_webview/main.py`
+- Backend model: local FastAPI/uvicorn runtime embedded in the desktop workflow
+- Packaging baseline: internal **onedir** build for Windows testing/training use
+
+At the current stage:
+- Browser mode remains the reference development mode
+- Desktop mode is the validated internal “double-click friendly” path
+- Packaging/release hardening is still in progress
+
+---
+
 ## Telemetry (optional)
 
 Telemetry is intentionally **off by default** to keep the minimal closed-loop independent of external services.
@@ -153,6 +189,9 @@ When `telemetry_enabled=true`, the backend attempts to write instrument state te
 
 - `main` is protected: merges require the GitHub Actions status check `test` to pass.
 - Prefer PR-based changes so CI gates all merges.
+- For desktop-related changes, validate both:
+  - browser mode (`/ui/`)
+  - desktop launcher mode (`desktop_webview/main.py`)
 
 ---
 
